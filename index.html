@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- Web App 原生适配标签 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ELIPHINI">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="ELIPHINI">
+    <meta name="theme-color" content="#fceaf0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#050b1a" media="(prefers-color-scheme: dark)">
+    
+    <title>ELIPHINI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #050b1a; 
+            color: #fff; 
+            -webkit-tap-highlight-color: transparent; 
+            overscroll-behavior-y: none;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .app-bg {
+            background: linear-gradient(165deg, #4b5d8a 0%, #9e7ca2 35%, #2c3359 65%, #060d20 100%);
+            background-attachment: fixed;
+        }
+        
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: 1px solid rgba(255, 255, 255, 0.25);
+            border-left: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .glass-button {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-button:active { background: rgba(255, 255, 255, 0.2); transform: scale(0.95); }
+
+        .glass-header {
+            background: linear-gradient(to bottom, rgba(75, 93, 138, 0.8) 0%, rgba(158, 124, 162, 0.4) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-bottom-nav {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            background: rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.4);
+            outline: none;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 10px rgba(255,255,255,0.1);
+        }
+        
+        .smooth-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .interactive { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .interactive:active { transform: scale(0.93); }
+        
+        .agenda-scroll::-webkit-scrollbar { width: 4px; }
+        .agenda-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        
+        .draggable-item { cursor: grab; }
+        .draggable-item:active { cursor: grabbing; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            background: transparent;
+            bottom: 0;
+            color: transparent;
+            cursor: pointer;
+            height: auto;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: auto;
+        }
+        
+        /* 彻底删除了引起遮挡和无法输入故障的 input[type="time"] 伪元素样式 */
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- SVGs ---
+        const Icons = {
+            Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>,
+            Vault: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
+            User: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
+            Plus: () => <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
+            Gift: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>,
+            Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
+            ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>,
+            ChevronLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>,
+            Copy: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
+            Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
+            Eye: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+            EyeOff: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>,
+            Back: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>,
+            Close: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+            Clock: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>,
+            List: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>,
+            Grip: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>,
+            Camera: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>,
+            Folder: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>,
+            Briefcase: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>,
+            Store: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
+            Shield: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>,
+            Film: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>,
+            Wifi: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>,
+            MessageCircle: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>,
+            GraduationCap: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>,
+            FileText: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>,
+            PenTool: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></svg>,
+            Landmark: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 22 7 12 2"></polygon><line x1="12" y1="22" x2="12" y2="7"></line><line x1="6" y1="22" x2="6" y2="7"></line><line x1="18" y1="22" x2="18" y2="7"></line><line x1="2" y1="22" x2="22" y2="22"></line></svg>,
+            Wallet: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>,
+            MoreHorizontal: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>,
+            Edit3: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>,
+            LogOut: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>,
+            Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
+            Upload: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        };
+
+        const FormInputRow = ({ label, name, value, onChange, type = "text", placeholder, children }) => (
+            <div className="border-b border-white/10 py-4 flex flex-col group relative">
+                <label className="text-[11px] text-white/40 mb-1.5 uppercase tracking-wider group-focus-within:text-white/80 transition-colors">{label}</label>
+                <div className="flex items-center">
+                    {children ? children : (
+                        <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full focus:outline-none text-white bg-transparent text-[15px] placeholder-white/20 font-medium relative z-10" />
+                    )}
+                </div>
+            </div>
+        );
+
+        const getDayOfWeek = (dateStr) => {
+            if (!dateStr) return '';
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            return days[new Date(dateStr).getDay()];
+        };
+
+        const formatChineseDate = (dateStr) => {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${days[d.getDay()]}`;
+        };
+
+        const getCategoryIcon = (catName) => {
+            if (/运营|工作|公司/.test(catName)) return Icons.Briefcase;
+            if (/商店|平台|上架/.test(catName)) return Icons.Store;
+            if (/资料|资产|核心/.test(catName)) return Icons.Shield;
+            if (/影音|影视|娱乐/.test(catName)) return Icons.Film;
+            if (/翻墙|上网|网络/.test(catName)) return Icons.Wifi;
+            if (/社交|通讯/.test(catName)) return Icons.MessageCircle;
+            if (/学习|课程/.test(catName)) return Icons.GraduationCap;
+            if (/发票|税务/.test(catName)) return Icons.FileText;
+            if (/设计|素材/.test(catName)) return Icons.PenTool;
+            if (/国家|政务/.test(catName)) return Icons.Landmark;
+            if (/卡包|银行|信用卡/.test(catName)) return Icons.Wallet;
+            if (/其他|琐碎/.test(catName)) return Icons.MoreHorizontal;
+            return Icons.Folder;
+        };
+
+        const AtmosphereBackground = () => (
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                <div className="absolute top-[8%] left-[8%] w-24 h-24 bg-white rounded-full blur-[40px] opacity-70 mix-blend-screen"></div>
+                <div className="absolute top-[10%] left-[10%] w-12 h-12 bg-white rounded-full blur-[8px] opacity-80 shadow-[0_0_20px_#fff]"></div>
+                <svg className="absolute top-[35%] w-full h-auto opacity-40 mix-blend-overlay" viewBox="0 0 1440 200" preserveAspectRatio="none">
+                    <path fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="1" d="M0,100 C280,30 400,180 720,100 C1040,20 1160,150 1440,80"></path>
+                    <circle cx="280" cy="58" r="4" fill="white" className="shadow-[0_0_10px_white]"/>
+                    <rect x="260" y="48" width="40" height="20" rx="10" fill="rgba(255,255,255,0.8)" className="blur-[1px]"/>
+                </svg>
+                <div className="absolute bottom-0 w-full h-1/2 bg-gradient-to-t from-[#02050f] to-transparent opacity-80"></div>
+            </div>
+        );
+
+        const generateId = () => Math.random().toString(36).substr(2, 9);
+        
+        const formatDate = (date) => {
+            const d = new Date(date);
+            let month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            return [year, month, day].join('-');
+        };
+
+        const calculateCountdown = (targetDateStr) => {
+            if (!targetDateStr) return 0;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const targetDate = new Date(targetDateStr);
+            targetDate.setHours(0, 0, 0, 0);
+            
+            targetDate.setFullYear(today.getFullYear());
+            if (targetDate < today) {
+                targetDate.setFullYear(today.getFullYear() + 1);
+            }
+            
+            const diffTime = targetDate - today;
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        };
+
+        const getAnniversaryInfo = (item) => {
+            if (!item || !item.date) return { days: 0, label: '还有' };
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const targetDate = new Date(item.date);
+            targetDate.setHours(0, 0, 0, 0);
+
+            let type = item.eventType || 'annual';
+            let days = 0;
+            let label = '还有';
+
+            if (type === 'elapsed') {
+                const diffTime = today - targetDate;
+                days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                if (days < 0) days = 0;
+                label = '已过';
+            } else if (type === 'countdown') {
+                const diffTime = targetDate - today;
+                days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (days < 0) days = 0;
+                label = '还有';
+            } else if (type === 'annual') {
+                targetDate.setFullYear(today.getFullYear());
+                if (targetDate < today) {
+                    targetDate.setFullYear(today.getFullYear() + 1);
+                }
+                const diffTime = targetDate - today;
+                days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                label = '还有';
+            }
+            return { days, label };
+        };
+
+        const initialCategories = {
+            '工作': ['公司运营账号', '应用商店平台上架', '管理层资料', '核心资产账号', '其他琐碎'],
+            '个人': ['影音娱乐', '科学上网', '社交运营', '学习进阶', '发票税务', '设计素材', '政务国家', '卡包聚合', '其他分类']
+        };
+
+        const Toast = ({ message, visible }) => (
+            <div className={`fixed top-12 left-1/2 transform -translate-x-1/2 glass-panel text-white px-6 py-3 rounded-full z-50 smooth-transition text-sm font-medium tracking-wide ${visible ? 'opacity-100 translate-y-0 shadow-[0_10px_40px_rgba(0,0,0,0.5)]' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+                {message}
+            </div>
+        );
+
+        const NavButton = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col items-center py-1.5 w-1/5 interactive ${active ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'text-white/40 hover:text-white/80'}`}>
+                {icon}
+                <span className={`text-[9px] mt-1 font-medium tracking-wider ${active ? 'opacity-100' : 'opacity-0'}`}>{label}</span>
+            </button>
+        );
+
+        const VaultView = ({ passwords, categories, onOpenDetail, onRenameCategory, onReorderCategories, onAddCategory, onDeleteCategory, onCreatePassword }) => {
+            const [activeGroup, setActiveGroup] = useState('工作');
+            const [searchQuery, setSearchQuery] = useState('');
+            const [activeCategory, setActiveCategory] = useState(null); 
+            const [editingCatName, setEditingCatName] = useState(null);
+            const [tempCatName, setTempCatName] = useState('');
+            const [draggedItemIdx, setDraggedItemIdx] = useState(null);
+            const [dragOverIdx, setDragOverIdx] = useState(null);
+            
+            const [isAddingCategory, setIsAddingCategory] = useState(false);
+            const [newCategoryName, setNewCategoryName] = useState('');
+
+            const currentGroupCategories = categories[activeGroup] || [];
+            const filteredPasswords = useMemo(() => passwords.filter(p => p.group === activeGroup && (p.name.toLowerCase().includes(searchQuery.toLowerCase()) || (p.account && p.account.toLowerCase().includes(searchQuery.toLowerCase())))), [passwords, activeGroup, searchQuery]);
+
+            useEffect(() => { 
+                setActiveCategory(null); 
+                setEditingCatName(null); 
+                setIsAddingCategory(false);
+            }, [activeGroup, searchQuery]);
+
+            const handleInlineRename = (oldName) => {
+                if (tempCatName.trim() && tempCatName !== oldName) {
+                    onRenameCategory(activeGroup, oldName, tempCatName.trim());
+                }
+                setEditingCatName(null);
+            };
+
+            return (
+                <div className="animate-fade-in flex flex-col h-full">
+                    <div className="px-6 pt-14 pb-2 shrink-0 z-20 glass-header rounded-b-[20px]">
+                        {activeCategory ? (
+                            <div className="flex items-center justify-between mb-2 mt-2 w-full">
+                                <div className="flex items-center space-x-4 min-w-0">
+                                    <button onClick={() => setActiveCategory(null)} className="glass-button p-2 text-white/80 interactive border-white/20 shrink-0"><Icons.Back /></button>
+                                    <h1 className="text-2xl font-semibold tracking-wide text-white truncate">{activeCategory}</h1>
+                                </div>
+                                <button 
+                                    onClick={() => onCreatePassword(activeGroup, activeCategory)}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center text-white bg-white/20 hover:bg-white/30 smooth-transition shadow-md interactive shrink-0 ml-4"
+                                >
+                                    <Icons.Plus />
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <h1 className="text-3xl font-semibold mb-6 tracking-wide drop-shadow-md">
+                                    Password<br/>
+                                    <span className="text-white/60 text-xl font-normal">数字资产 ({passwords.length}项)</span>
+                                </h1>
+                                <div className="relative mb-5">
+                                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-white/40"><Icons.Search /></div>
+                                    <input type="text" placeholder="检索名称、账号..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full glass-input rounded-[20px] py-3 pl-12 pr-4 text-sm placeholder-white/30 backdrop-blur-md" />
+                                </div>
+                                <div className="flex glass-button p-1 rounded-[16px]">
+                                    {Object.keys(categories).map(group => (
+                                        <button key={group} onClick={() => setActiveGroup(group)} className={`flex-1 py-2 text-sm font-medium rounded-[12px] smooth-transition interactive ${activeGroup === group ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}>
+                                            {group}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="px-5 pt-4 pb-24 space-y-4 flex-1 overflow-y-auto hide-scrollbar">
+                        {searchQuery ? (
+                            filteredPasswords.length === 0 ? <div className="text-center text-white/40 mt-10 tracking-wider text-sm">暂无匹配记录</div> :
+                            filteredPasswords.map(item => (
+                                <div key={item.id} onClick={() => onOpenDetail(item)} className="glass-panel p-5 flex justify-between items-center interactive hover:bg-white/5 !rounded-[24px]">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-11 h-11 rounded-[16px] bg-white/10 flex items-center justify-center text-white text-lg font-medium shadow-inner border border-white/5">{item.name.substring(0,1).toUpperCase()}</div>
+                                        <div>
+                                            <div className="font-medium text-white/90 text-[15px]">{item.name}</div>
+                                            <div className="text-[12px] text-white/40 mt-1 font-mono tracking-wide">{item.account || item.email || '未填账号'}</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-white/20"><Icons.ChevronRight /></div>
+                                </div>
+                            ))
+                        ) : activeCategory ? (
+                            <>
+                                {filteredPasswords.filter(p => p.category === activeCategory).length === 0 ? (
+                                    <div className="text-center text-white/40 mt-10 tracking-wider text-sm">该目录下暂无记录</div>
+                                ) : (
+                                    filteredPasswords.filter(p => p.category === activeCategory).map(item => (
+                                        <div key={item.id} onClick={() => onOpenDetail(item)} className="glass-panel p-5 flex justify-between items-center interactive hover:bg-white/5 !rounded-[24px]">
+                                            <div className="flex items-center space-x-4">
+                                                <div className="w-11 h-11 rounded-[16px] bg-gradient-to-tr from-white/10 to-white/5 flex items-center justify-center text-white text-lg font-medium shadow-inner border border-white/10">{item.name.substring(0,1).toUpperCase()}</div>
+                                                <div>
+                                                    <div className="font-medium text-white/90 text-[15px] tracking-wide">{item.name}</div>
+                                                    <div className="text-[12px] text-white/40 mt-1.5 font-mono tracking-wide">{item.account || item.email || '未填账号'}</div>
+                                                </div>
+                                            </div>
+                                            <div className="text-white/20"><Icons.ChevronRight /></div>
+                                        </div>
+                                    ))
+                                )}
+                                
+                                <div 
+                                    onClick={() => onCreatePassword(activeGroup, activeCategory)}
+                                    className="glass-panel p-4 !rounded-[24px] border border-dashed border-white/30 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 interactive smooth-transition cursor-pointer mt-4 shadow-sm"
+                                >
+                                    <Icons.Plus />
+                                    <span className="ml-2 text-[14px] font-bold tracking-wide">添加新记录</span>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {currentGroupCategories.map((cat, index) => {
+                                    const itemsInCat = passwords.filter(p => p.group === activeGroup && p.category === cat);
+                                    const CategoryIcon = getCategoryIcon(cat);
+                                    const isDraggingThis = draggedItemIdx === index;
+                                    const isDragOverThis = dragOverIdx === index;
+                                    
+                                    return (
+                                        <div 
+                                            key={cat} 
+                                            draggable="true"
+                                            onDragStart={(e) => { 
+                                                e.dataTransfer.setData('text/plain', index);
+                                                e.dataTransfer.effectAllowed = "move";
+                                                setDraggedItemIdx(index); 
+                                            }}
+                                            onDragOver={(e) => {
+                                                e.preventDefault();
+                                                e.dataTransfer.dropEffect = "move";
+                                                if (dragOverIdx !== index) setDragOverIdx(index);
+                                            }}
+                                            onDragLeave={() => setDragOverIdx(null)}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                if (draggedItemIdx !== null && draggedItemIdx !== index) {
+                                                    onReorderCategories(activeGroup, draggedItemIdx, index);
+                                                }
+                                                setDraggedItemIdx(null);
+                                                setDragOverIdx(null);
+                                            }}
+                                            onDragEnd={() => {
+                                                setDraggedItemIdx(null);
+                                                setDragOverIdx(null);
+                                            }}
+                                            className={`glass-panel overflow-hidden smooth-transition !rounded-[24px] draggable-item 
+                                                ${isDraggingThis ? 'opacity-40 scale-95 shadow-none' : 'hover:bg-white/5'}
+                                                ${isDragOverThis && !isDraggingThis ? 'border-dashed border-[#E6C8E6] bg-white/10' : ''}`}
+                                            onClick={() => { if(!editingCatName) setActiveCategory(cat); }}
+                                        >
+                                            <div className="flex justify-between items-center p-5 relative">
+                                                <div className="flex items-center space-x-4 flex-1">
+                                                    <div className="w-12 h-12 shrink-0 rounded-[18px] bg-gradient-to-tr from-white/5 to-white/10 flex items-center justify-center text-[#E6C8E6] shadow-inner border border-white/10 backdrop-blur-md">
+                                                        <CategoryIcon />
+                                                    </div>
+                                                    <div className="flex-1 pr-2">
+                                                        {editingCatName === cat ? (
+                                                            <input 
+                                                                autoFocus
+                                                                value={tempCatName}
+                                                                onChange={e => setTempCatName(e.target.value)}
+                                                                onBlur={() => handleInlineRename(cat)}
+                                                                onKeyDown={e => { if (e.key === 'Enter') handleInlineRename(cat); }}
+                                                                className="bg-transparent border-b border-white/50 outline-none text-white w-full text-[16px] font-medium tracking-wide pb-1"
+                                                                onClick={e => e.stopPropagation()}
+                                                            />
+                                                        ) : (
+                                                            <h3 
+                                                                className="font-medium text-white/90 tracking-wide text-[16px] cursor-text inline-block"
+                                                                onClick={(e) => { 
+                                                                    e.stopPropagation(); 
+                                                                    setEditingCatName(cat); 
+                                                                    setTempCatName(cat); 
+                                                                }}
+                                                            >
+                                                                {cat}
+                                                            </h3>
+                                                        )}
+                                                        <div className="text-[12px] text-white/40 mt-1 font-mono">{itemsInCat.length} 项记录</div>
+                                                    </div>
+                                                </div>
+                                                <div 
+                                                    className="text-white/20 px-3 py-2 cursor-grab active:cursor-grabbing hover:text-[#ff6b6b] smooth-transition interactive z-10" 
+                                                    title="长按拖拽排序 / 点击删除目录"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDeleteCategory(activeGroup, cat);
+                                                    }}
+                                                >
+                                                    <Icons.Grip />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                
+                                {isAddingCategory ? (
+                                    <div className="glass-panel overflow-hidden smooth-transition !rounded-[24px] border-dashed border-white/30 bg-white/5 mt-2">
+                                        <div className="flex justify-between items-center p-5 relative">
+                                            <div className="flex items-center space-x-4 flex-1">
+                                                <div className="w-12 h-12 shrink-0 rounded-[18px] bg-gradient-to-tr from-white/5 to-white/10 flex items-center justify-center text-white/50 shadow-inner border border-white/10 backdrop-blur-md">
+                                                    <Icons.Folder />
+                                                </div>
+                                                <div className="flex-1 pr-2">
+                                                    <input 
+                                                        autoFocus
+                                                        value={newCategoryName}
+                                                        onChange={e => setNewCategoryName(e.target.value)}
+                                                        onBlur={() => {
+                                                            if (newCategoryName.trim()) {
+                                                                onAddCategory(activeGroup, newCategoryName);
+                                                            }
+                                                            setIsAddingCategory(false);
+                                                            setNewCategoryName('');
+                                                        }}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter') {
+                                                                if (newCategoryName.trim()) onAddCategory(activeGroup, newCategoryName);
+                                                                setIsAddingCategory(false);
+                                                                setNewCategoryName('');
+                                                            } else if (e.key === 'Escape') {
+                                                                setIsAddingCategory(false);
+                                                                setNewCategoryName('');
+                                                            }
+                                                        }}
+                                                        placeholder="输入目录名称..."
+                                                        className="bg-transparent border-b border-white/50 outline-none text-white w-full text-[16px] font-medium tracking-wide pb-1"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div 
+                                        onClick={() => setIsAddingCategory(true)}
+                                        className="glass-panel p-4 !rounded-[24px] border border-dashed border-white/30 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 interactive smooth-transition cursor-pointer mt-2 shadow-sm"
+                                    >
+                                        <Icons.Plus />
+                                        <span className="ml-2 text-[14px] font-bold tracking-wide">新增同级目录</span>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const PasswordForm = ({ initialData, categories, onSave, onCancel, onDelete, showToast }) => {
+            const isEdit = !!initialData?.id;
+            
+            const [formData, setFormData] = useState(() => {
+                if (initialData && initialData.id) return initialData;
+                
+                return { 
+                    name: '', 
+                    group: initialData?.group || '工作', 
+                    category: initialData?.category || categories[initialData?.group || '工作']?.[0] || '', 
+                    url: '', 
+                    account: '', 
+                    email: '', 
+                    password: '', 
+                    phone: '', 
+                    customFields: [] 
+                };
+            });
+            const [showPassword, setShowPassword] = useState(false);
+
+            useEffect(() => { 
+                if (!isEdit && categories[formData.group] && !initialData?.category) {
+                    setFormData(prev => ({...prev, category: categories[formData.group][0] || ''})); 
+                }
+            }, [formData.group, categories, isEdit, initialData]);
+
+            const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+            const handleCustomFieldChange = (index, key, value) => { const newFields = [...formData.customFields]; newFields[index][key] = value; setFormData(prev => ({ ...prev, customFields: newFields })); };
+            const addCustomField = () => setFormData(prev => ({ ...prev, customFields: [...prev.customFields, { label: '', value: '' }] }));
+            const removeCustomField = (index) => { const newFields = [...formData.customFields]; newFields.splice(index, 1); setFormData(prev => ({ ...prev, customFields: newFields })); };
+
+            const handleSubmit = () => { if (!formData.name) return showToast('名称不能为空'); onSave(formData); };
+            const generatePassword = () => {
+                const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+                let pass = ""; for (let i = 0; i < 16; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+                setFormData(prev => ({...prev, password: pass})); setShowPassword(true);
+            };
+
+            const InputRow = ({ label, name, type = "text", placeholder, children }) => (
+                <div className="border-b border-white/10 py-4 flex flex-col group relative">
+                    <label className="text-[11px] text-white/40 mb-1.5 uppercase tracking-wider group-focus-within:text-white/80 transition-colors">{label}</label>
+                    <div className="flex items-center">
+                        {children ? children : (
+                            <input type={type} name={name} value={formData[name] || ''} onChange={handleChange} placeholder={placeholder} className="w-full focus:outline-none text-white bg-transparent text-[15px] placeholder-white/20 font-medium relative z-10" />
+                        )}
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="h-full animate-fade-in flex flex-col">
+                    <div className="flex justify-between items-center px-6 pt-14 pb-4 shrink-0 z-10 glass-header rounded-b-[32px]">
+                        <button onClick={onCancel} className="text-white/60 interactive hover:text-white text-sm">取消</button>
+                        <h2 className="font-medium text-white tracking-wide">{isEdit ? '编辑凭证' : '新建凭证'}</h2>
+                        <button onClick={handleSubmit} className="text-white font-semibold interactive">完成</button>
+                    </div>
+
+                    <div className="p-5 flex-1 overflow-y-auto hide-scrollbar mt-2 pb-12">
+                        <div className="glass-panel !rounded-[24px] p-5 mb-6">
+                            <div className="flex mb-5 glass-button p-1 !rounded-[16px]">
+                                {Object.keys(categories).map(group => (
+                                    <button key={group} onClick={() => setFormData(prev => ({...prev, group}))} className={`flex-1 py-2 text-sm rounded-[12px] smooth-transition interactive ${formData.group === group ? 'bg-white/20 text-white font-medium shadow-sm' : 'text-white/40'}`}>
+                                        {group}
+                                    </button>
+                                ))}
+                            </div>
+                            <div>
+                                <label className="text-[11px] text-white/40 mb-2 block uppercase tracking-wider">归属目录</label>
+                                <select name="category" value={formData.category} onChange={handleChange} className="w-full glass-input !rounded-[16px] p-3.5 text-[15px] focus:outline-none appearance-none font-medium">
+                                    {categories[formData.group]?.map(cat => <option key={cat} value={cat} className="text-gray-800">{cat}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="glass-panel !rounded-[24px] p-5 mb-6">
+                            <InputRow label="标识名称" name="name" placeholder="如：Apple ID" />
+                            <InputRow label="Web 地址" name="url" placeholder="https://..." />
+                            <InputRow label="登录账户" name="account" placeholder="用户名 / ID" />
+                            <InputRow label="绑定邮箱" name="email" type="email" placeholder="example@mail.com" />
+                            
+                            <div className="border-b border-white/10 py-4 flex flex-col group relative z-10">
+                                <label className="text-[11px] text-white/40 mb-1.5 uppercase tracking-wider group-focus-within:text-white/80 transition-colors">安全密码</label>
+                                <div className="flex items-center">
+                                    <input type={showPassword ? "text" : "password"} name="password" value={formData.password || ''} onChange={handleChange} placeholder="输入或生成" className="w-full focus:outline-none text-white bg-transparent text-[15px] placeholder-white/20 font-mono tracking-wider" />
+                                    <button onClick={generatePassword} className="text-[11px] text-white font-medium glass-button px-3 py-1.5 !rounded-full ml-2 whitespace-nowrap interactive">随机生成</button>
+                                    <button onClick={() => setShowPassword(!showPassword)} className="ml-3 text-white/40 p-1 interactive hover:text-white">{showPassword ? <Icons.EyeOff /> : <Icons.Eye />}</button>
+                                </div>
+                            </div>
+                            
+                            <InputRow label="关联手机" name="phone" type="tel" placeholder="+86" />
+                        </div>
+
+                        <div className="glass-panel !rounded-[24px] p-5 mb-8">
+                            <h3 className="text-[11px] text-white/40 mb-4 uppercase tracking-wider">附加字段</h3>
+                            {formData.customFields.map((field, index) => (
+                                <div key={index} className="flex space-x-3 mb-4 items-center">
+                                    <input type="text" placeholder="Key" value={field.label} onChange={(e) => handleCustomFieldChange(index, 'label', e.target.value)} className="w-1/3 glass-input !rounded-[12px] p-3 text-sm focus:outline-none placeholder-white/20" />
+                                    <input type="text" placeholder="Value" value={field.value} onChange={(e) => handleCustomFieldChange(index, 'value', e.target.value)} className="w-full glass-input !rounded-[12px] p-3 text-sm focus:outline-none placeholder-white/20" />
+                                    <button onClick={() => removeCustomField(index)} className="p-2 text-[#ff6b6b] opacity-80 interactive hover:opacity-100"><Icons.Trash /></button>
+                                </div>
+                            ))}
+                            <button onClick={addCustomField} className="w-full py-4 mt-2 glass-button !bg-transparent border-dashed border-white/20 !rounded-[16px] text-sm text-white/60 font-medium flex justify-center items-center interactive hover:bg-white/5">
+                                添加自定义字段
+                            </button>
+                        </div>
+
+                        {isEdit && (
+                            <button onClick={onDelete} className="w-full py-4 text-[#ff6b6b] glass-panel border border-[#ff6b6b]/20 !rounded-[20px] font-medium mb-10 interactive hover:bg-[#ff6b6b]/10 backdrop-blur-md">
+                                删除此凭证
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const PasswordDetail = ({ item, onEdit, onBack, onCopy }) => {
+            if (!item) return null;
+            const [showPassword, setShowPassword] = useState(false);
+
+            const FieldView = ({ label, value, isPassword = false }) => {
+                if (!value) return null;
+                const displayValue = isPassword && !showPassword ? '••••••••••••' : value;
+                return (
+                    <div className="py-5 border-b border-white/5 flex justify-between items-center group">
+                        <div className="flex-1 pr-4">
+                            <div className="text-[11px] text-white/40 mb-1 uppercase tracking-wider">{label}</div>
+                            <div className={`text-[15px] text-white/90 ${isPassword && !showPassword ? 'tracking-[0.2em] mt-2' : 'break-all font-medium'}`}>
+                                {displayValue}
+                            </div>
+                        </div>
+                        <div className="flex space-x-2 items-center">
+                            {isPassword && <button onClick={() => setShowPassword(!showPassword)} className="text-white/40 p-2 interactive hover:text-white">{showPassword ? <Icons.EyeOff /> : <Icons.Eye />}</button>}
+                            <button onClick={() => onCopy(value)} className="text-white glass-button p-2.5 !rounded-full interactive"><Icons.Copy /></button>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="h-full animate-fade-in flex flex-col">
+                    <div className="flex justify-between items-center px-4 pt-14 pb-4 shrink-0 glass-header z-10 rounded-b-[32px]">
+                        <button onClick={onBack} className="text-white/80 flex items-center interactive glass-button py-1.5 px-3 !rounded-full text-sm font-medium"><Icons.Back /> <span className="ml-1">返回</span></button>
+                        <button onClick={onEdit} className="text-white font-medium px-5 py-2 glass-button !rounded-full text-sm interactive">编辑</button>
+                    </div>
+
+                    <div className="p-5 mt-2 pb-12 flex-1 overflow-y-auto hide-scrollbar">
+                        <div className="glass-panel p-6 !rounded-[32px] mb-6 flex items-center justify-between shadow-[0_20px_40px_rgba(0,0,0,0.3)] border-t border-white/30 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-[30px] -mr-10 -mt-10"></div>
+                            <div className="relative z-10">
+                                <h2 className="text-2xl font-semibold text-white tracking-wide mb-3">{item.name}</h2>
+                                <div className="flex items-center space-x-3">
+                                    <span className="text-[11px] px-3 py-1 bg-white/10 text-white/80 rounded-full border border-white/10">{item.group}</span>
+                                    <span className="text-[11px] px-3 py-1 glass-button border-none !bg-white/5 text-white/60 rounded-full">{item.category}</span>
+                                </div>
+                            </div>
+                            <div className="w-16 h-16 bg-white/10 rounded-[20px] flex items-center justify-center text-white text-2xl font-medium shadow-inner border border-white/20 relative z-10 backdrop-blur-md">
+                                {item.name.substring(0, 1).toUpperCase()}
+                            </div>
+                        </div>
+
+                        <div className="glass-panel px-6 py-2 !rounded-[32px]">
+                            <FieldView label="Website" value={item.url} />
+                            <FieldView label="Account ID" value={item.account} />
+                            <FieldView label="Email" value={item.email} />
+                            <FieldView label="Password" value={item.password} isPassword={true} />
+                            <FieldView label="Phone" value={item.phone} />
+                            {item.customFields && item.customFields.map((field, idx) => <FieldView key={idx} label={field.label} value={field.value} />)}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const CalendarView = ({ schedules, onOpenDetail, onAddSchedule }) => {
+            const [calendarMode, setCalendarMode] = useState('month');
+            const [currentDate, setCurrentDate] = useState(new Date());
+            const [selectedDate, setSelectedDate] = useState(new Date());
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const firstDayOfMonth = new Date(year, month, 1).getDay(); 
+            
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            const getWeekDates = (date) => {
+                const current = new Date(date);
+                const day = current.getDay();
+                const diff = current.getDate() - day;
+                const startOfWeek = new Date(current.setDate(diff));
+                const week = [];
+                for (let i = 0; i < 7; i++) {
+                    week.push(new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + i));
+                }
+                return week;
+            };
+
+            const prevDay = () => {
+                const newDate = new Date(selectedDate);
+                newDate.setDate(newDate.getDate() - 1);
+                setSelectedDate(newDate);
+                setCurrentDate(newDate); 
+            };
+            const nextDay = () => {
+                const newDate = new Date(selectedDate);
+                newDate.setDate(newDate.getDate() + 1);
+                setSelectedDate(newDate);
+                setCurrentDate(newDate); 
+            };
+
+            const handlePrev = () => {
+                if (calendarMode === 'month') {
+                    setCurrentDate(new Date(year, month - 1, 1));
+                } else if (calendarMode === 'week') {
+                    const newDate = new Date(selectedDate);
+                    newDate.setDate(newDate.getDate() - 7);
+                    setSelectedDate(newDate);
+                    setCurrentDate(newDate);
+                } else {
+                    prevDay();
+                }
+            };
+
+            const handleNext = () => {
+                if (calendarMode === 'month') {
+                    setCurrentDate(new Date(year, month + 1, 1));
+                } else if (calendarMode === 'week') {
+                    const newDate = new Date(selectedDate);
+                    newDate.setDate(newDate.getDate() + 7);
+                    setSelectedDate(newDate);
+                    setCurrentDate(newDate);
+                } else {
+                    nextDay();
+                }
+            };
+
+            const renderCalendarGrid = () => {
+                if (calendarMode === 'day') return null;
+
+                const cells = [];
+                if (calendarMode === 'month') {
+                    for (let i = 0; i < firstDayOfMonth; i++) {
+                        cells.push(<div key={`empty-${i}`} className="w-full aspect-square"></div>);
+                    }
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        const dateStr = formatDate(new Date(year, month, d));
+                        const isSelected = formatDate(selectedDate) === dateStr;
+                        const isToday = formatDate(new Date()) === dateStr;
+                        const hasSchedule = schedules.some(s => s.date === dateStr);
+                        
+                        cells.push(
+                            <div key={`month-${d}`} onClick={() => { setSelectedDate(new Date(year, month, d)); setCurrentDate(new Date(year, month, d)); }} 
+                                 className={`w-full aspect-square flex flex-col items-center justify-center rounded-[14px] interactive smooth-transition relative
+                                 ${isSelected ? 'bg-white/20 border border-white/30 shadow-[0_4px_12px_rgba(0,0,0,0.1)]' : 'hover:bg-white/5'}
+                                 ${isToday && !isSelected ? 'border border-white/20' : ''}`}>
+                                <span className={`text-[15px] font-medium ${isSelected ? 'text-white' : 'text-white/80'}`}>{d}</span>
+                                {hasSchedule && <div className="w-1 h-1 bg-white rounded-full mt-1 opacity-70"></div>}
+                            </div>
+                        );
+                    }
+                } else if (calendarMode === 'week') {
+                    const weekDays = getWeekDates(selectedDate);
+                    weekDays.forEach(d => {
+                        const dateStr = formatDate(d);
+                        const isSelected = formatDate(selectedDate) === dateStr;
+                        const isToday = formatDate(new Date()) === dateStr;
+                        const hasSchedule = schedules.some(s => s.date === dateStr);
+                        cells.push(
+                            <div key={`week-${d.getTime()}`} onClick={() => { setSelectedDate(d); setCurrentDate(d); }} 
+                                 className={`w-full aspect-square flex flex-col items-center justify-center rounded-[14px] interactive smooth-transition relative
+                                 ${isSelected ? 'bg-white/20 border border-white/30 shadow-[0_4px_12px_rgba(0,0,0,0.1)]' : 'hover:bg-white/5'}
+                                 ${isToday && !isSelected ? 'border border-white/20' : ''}`}>
+                                <span className={`text-[15px] font-medium ${isSelected ? 'text-white' : 'text-white/80'}`}>{d.getDate()}</span>
+                                {hasSchedule && <div className="w-1 h-1 bg-white rounded-full mt-1 opacity-70"></div>}
+                            </div>
+                        );
+                    });
+                }
+
+                return (
+                    <div className="px-5 mb-4 shrink-0 animate-fade-in">
+                        <div className="glass-panel p-4 !rounded-[24px]">
+                            <div className="grid grid-cols-7 mb-2">
+                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                                    <div key={day} className="text-center text-[10px] text-white/40 uppercase tracking-widest font-medium mb-2">{day}</div>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-7 gap-y-1 gap-x-1">
+                                {cells}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const selectedDateStr = formatDate(selectedDate);
+            const selectedDayEvents = schedules.filter(s => s.date === selectedDateStr).sort((a,b) => a.timeStr.localeCompare(b.timeStr));
+
+            const typeStyles = {
+                'work': { bg: 'bg-[#6B8ECC]', border: 'border-[#6B8ECC]' },
+                'personal': { bg: 'bg-[#E6C8E6]', border: 'border-[#E6C8E6]' },
+                'important': { bg: 'bg-[#ff6b6b]', border: 'border-[#ff6b6b]' },
+                'learning': { bg: 'bg-[#F4D35E]', border: 'border-[#F4D35E]' }
+            };
+
+            return (
+                <div className="flex flex-col h-full animate-fade-in">
+                    <div className="px-6 pt-14 pb-2 flex justify-between items-center shrink-0 z-10">
+                        <h1 className="text-[22px] font-medium tracking-wide">
+                            {monthNames[month]} <span className="text-white/50">{year}</span>
+                        </h1>
+                        <div className="flex space-x-3">
+                            <button onClick={handlePrev} className="w-11 h-11 flex items-center justify-center !rounded-full glass-button text-white/80 interactive hover:text-white active:bg-white/20"><Icons.ChevronLeft /></button>
+                            <button onClick={handleNext} className="w-11 h-11 flex items-center justify-center !rounded-full glass-button text-white/80 interactive hover:text-white active:bg-white/20"><Icons.ChevronRight /></button>
+                        </div>
+                    </div>
+
+                    <div className="px-6 pb-4 flex justify-center shrink-0 z-10">
+                        <div className="flex glass-button p-1 rounded-[16px] w-full max-w-[200px]">
+                            <button onClick={() => setCalendarMode('day')} className={`flex-1 py-1.5 text-[13px] font-medium rounded-[12px] smooth-transition interactive ${calendarMode === 'day' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}>日</button>
+                            <button onClick={() => setCalendarMode('week')} className={`flex-1 py-1.5 text-[13px] font-medium rounded-[12px] smooth-transition interactive ${calendarMode === 'week' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}>周</button>
+                            <button onClick={() => setCalendarMode('month')} className={`flex-1 py-1.5 text-[13px] font-medium rounded-[12px] smooth-transition interactive ${calendarMode === 'month' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}>月</button>
+                        </div>
+                    </div>
+
+                    {renderCalendarGrid()}
+
+                    <div className="flex-1 px-5 pb-24 overflow-y-auto agenda-scroll">
+                        <div className="flex justify-between items-center mb-6 px-1 mt-2">
+                            <div className="flex flex-col">
+                                <h2 className="text-[18px] font-bold text-white tracking-wider">今日行程</h2>
+                                <div className="text-[11px] text-white/40 mt-1 font-mono">{selectedDateStr}</div>
+                            </div>
+                            <button onClick={() => onAddSchedule(selectedDateStr)} className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 interactive shadow-sm">
+                                <Icons.Plus />
+                            </button>
+                        </div>
+
+                        {selectedDayEvents.length === 0 ? (
+                            <div className="glass-panel p-8 text-center !rounded-[24px] border border-dashed border-white/20 flex flex-col items-center justify-center opacity-60 mt-4">
+                                <Icons.List />
+                                <p className="text-[13px] text-white/60 mt-3 tracking-wide">今日暂无行程安排</p>
+                            </div>
+                        ) : (
+                            <div className="relative mt-2">
+                                <div className="absolute left-[59px] top-6 bottom-6 w-[2px] bg-white/10"></div>
+                                {selectedDayEvents.map((event) => {
+                                    const startTime = event.timeStr ? event.timeStr.split('-')[0].trim() : '全天';
+                                    const tStyle = typeStyles[event.type] || { bg: 'bg-white/30', border: 'border-white/30' };
+                                    
+                                    return (
+                                        <div key={event.id} onClick={() => onOpenDetail(event)} className="flex items-start mb-6 group cursor-pointer relative">
+                                            <div className="w-[48px] text-right pt-[14px] shrink-0">
+                                                <span className="text-[13px] font-bold text-white/70 tracking-wider">{startTime}</span>
+                                            </div>
+                                            <div className="w-[24px] flex justify-center pt-[18px] shrink-0 relative z-10">
+                                                <div className={`w-[10px] h-[10px] rounded-full border-[2.5px] ${tStyle.border} bg-[#050b1a] group-hover:${tStyle.bg} smooth-transition shadow-[0_0_8px_rgba(255,255,255,0.1)]`}></div>
+                                            </div>
+                                            <div className="flex-1 glass-panel p-4 !rounded-[20px] relative overflow-hidden border border-white/5 group-hover:bg-white/5 group-hover:border-white/20 smooth-transition ml-1">
+                                                <div className={`absolute top-0 left-0 w-1.5 h-full ${tStyle.bg}`}></div>
+                                                <div className="pl-3">
+                                                    <h3 className="text-[15px] font-bold text-white/90 tracking-wide mb-1">{event.title}</h3>
+                                                    {event.description && <p className="text-[12px] text-white/50 line-clamp-2 mb-3 leading-relaxed">{event.description}</p>}
+                                                    <div className="flex items-center text-white/40 space-x-1.5 mt-2 bg-black/20 self-start inline-flex px-2 py-0.5 rounded-md">
+                                                        <Icons.Clock />
+                                                        <span className="text-[10px] font-mono tracking-wider">{event.timeStr}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                        <div className="h-10"></div> 
+                    </div>
+                </div>
+            );
+        };
+
+        const ScheduleForm = ({ initialData, onSave, onCancel, onDelete, showToast }) => {
+            const isEdit = !!initialData?.id; 
+            const initialTimeStr = initialData?.timeStr || '10:00 - 11:00';
+            
+            const parseTime = (t) => {
+                if(!t) return '10:00';
+                const parts = t.split(':');
+                if (parts.length !== 2) return t;
+                return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+            };
+
+            const [startT, endT] = initialTimeStr.includes('-') 
+                ? initialTimeStr.split('-').map(s => s.trim()) 
+                : ['10:00', '11:00'];
+
+            const [formData, setFormData] = useState({
+                id: initialData?.id || null,
+                title: initialData?.title || '',
+                date: initialData?.date || formatDate(new Date()),
+                timeStr: initialTimeStr,
+                type: initialData?.type || 'work',
+                description: initialData?.description || ''
+            });
+
+            const [startTime, setStartTime] = useState(parseTime(startT));
+            const [endTime, setEndTime] = useState(parseTime(endT));
+
+            useEffect(() => {
+                setFormData(prev => ({ ...prev, timeStr: `${startTime} - ${endTime}` }));
+            }, [startTime, endTime]);
+
+            const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+            const handleSubmit = () => { if (!formData.title) return showToast('请输入日程标题'); onSave(formData); };
+
+            const typeOptions = [
+                { id: 'work', label: '工作', color: 'bg-[#6B8ECC]' },
+                { id: 'personal', label: '生活', color: 'bg-[#E6C8E6]' },
+                { id: 'important', label: '重要', color: 'bg-[#ff6b6b]' },
+                { id: 'learning', label: '学习', color: 'bg-[#F4D35E]' }
+            ];
+
+            return (
+                <div className="h-full animate-fade-in flex flex-col">
+                    <div className="flex justify-between items-center px-6 pt-14 pb-4 shrink-0 z-10 glass-header rounded-b-[32px]">
+                        <button onClick={onCancel} className="text-white/60 interactive hover:text-white text-sm">取消</button>
+                        <h2 className="font-medium text-white tracking-wide">{isEdit ? '编辑日程' : '添加日程'}</h2>
+                        <button onClick={handleSubmit} className="text-white font-semibold interactive">完成</button>
+                    </div>
+
+                    <div className="p-5 flex-1 overflow-y-auto hide-scrollbar mt-2 pb-12">
+                        <div className="glass-panel !rounded-[24px] p-5 mb-6">
+                            <FormInputRow label="日程标题" name="title" value={formData.title} onChange={handleChange} placeholder="如：部门例会" />
+                            <FormInputRow label="日期" name="date" type="date" value={formData.date} onChange={handleChange} />
+                            
+                            <div className="border-b border-white/10 py-4 flex flex-col group relative">
+                                <label className="text-[11px] text-white/40 mb-3 uppercase tracking-wider group-focus-within:text-white/80 transition-colors">时间段</label>
+                                <div className="flex items-center justify-between space-x-3">
+                                    <div className="flex-1 bg-black/20 border border-white/10 rounded-[14px] px-3 py-2.5 focus-within:border-white/40 focus-within:bg-black/40 smooth-transition">
+                                        <input 
+                                            type="time" 
+                                            value={startTime} 
+                                            onChange={e => setStartTime(e.target.value)} 
+                                            className="w-full bg-transparent text-white text-[16px] font-medium font-mono focus:outline-none block" 
+                                            required
+                                        />
+                                    </div>
+                                    <span className="text-white/30 font-medium">-</span>
+                                    <div className="flex-1 bg-black/20 border border-white/10 rounded-[14px] px-3 py-2.5 focus-within:border-white/40 focus-within:bg-black/40 smooth-transition">
+                                        <input 
+                                            type="time" 
+                                            value={endTime} 
+                                            onChange={e => setEndTime(e.target.value)} 
+                                            className="w-full bg-transparent text-white text-[16px] font-medium font-mono focus:outline-none block" 
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="border-b border-white/10 py-4 flex flex-col">
+                                <label className="text-[11px] text-white/40 mb-3 uppercase tracking-wider">日程分类</label>
+                                <div className="flex space-x-2">
+                                    {typeOptions.map(t => (
+                                        <button key={t.id} onClick={() => setFormData({...formData, type: t.id})} 
+                                                className={`flex-1 py-2 text-xs rounded-xl smooth-transition interactive flex items-center justify-center space-x-1 border 
+                                                ${formData.type === t.id ? 'bg-white/20 border-white/30 text-white shadow-sm' : 'bg-transparent border-white/10 text-white/50'}`}>
+                                            <div className={`w-2 h-2 rounded-full ${t.color}`}></div>
+                                            <span>{t.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="py-4 flex flex-col">
+                                <label className="text-[11px] text-white/40 mb-2 uppercase tracking-wider">详情备注</label>
+                                <textarea name="description" value={formData.description || ''} onChange={handleChange} placeholder="添加更多描述..." className="w-full focus:outline-none text-white bg-transparent text-[14px] placeholder-white/20 resize-none h-20" />
+                            </div>
+                        </div>
+
+                        {isEdit && (
+                            <button onClick={onDelete} className="w-full py-4 text-[#ff6b6b] glass-panel border border-[#ff6b6b]/20 !rounded-[20px] font-medium mb-10 interactive hover:bg-[#ff6b6b]/10 backdrop-blur-md">
+                                删除此日程
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const AnniversaryView = ({ anniversaries, onOpenDetail, onCreate }) => {
+            const sorted = [...anniversaries].sort((a, b) => getAnniversaryInfo(a).days - getAnniversaryInfo(b).days);
+
+            return (
+                <div className="animate-fade-in flex flex-col h-full">
+                    <div className="px-6 pt-14 pb-4 shrink-0 z-10 glass-header rounded-b-[32px] flex justify-between items-end">
+                        <div>
+                            <h1 className="text-3xl font-semibold mb-2 text-white tracking-wide">Moments</h1>
+                            <p className="text-[13px] text-white/50 tracking-wider">共计 {anniversaries.length} 个重要日子</p>
+                        </div>
+                        <button onClick={onCreate} className="w-10 h-10 rounded-full flex items-center justify-center text-white bg-white/20 hover:bg-white/30 smooth-transition mb-1 shadow-md interactive">
+                            <Icons.Plus />
+                        </button>
+                    </div>
+                    
+                    <div className="p-5 flex-1 overflow-y-auto hide-scrollbar pb-24">
+                        {sorted.length === 0 ? (
+                            <div className="p-12 text-center flex flex-col items-center glass-panel !rounded-[32px] mt-4 border-dashed border-white/20">
+                                <div className="text-white/20 mb-4"><Icons.Gift /></div>
+                                <div className="text-white/50 text-sm tracking-wide leading-relaxed">空空如也<br/>点击右上角添加记录</div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-4">
+                                {sorted.map(item => {
+                                    const { days, label } = getAnniversaryInfo(item);
+                                    return (
+                                        <div key={item.id} onClick={() => onOpenDetail(item)} className="flex flex-col items-center interactive group cursor-pointer">
+                                            <div className="glass-panel w-full aspect-[4/4.5] !rounded-[24px] p-5 flex flex-col justify-between shadow-[0_8px_20px_rgba(0,0,0,0.15)] text-white relative overflow-hidden border border-transparent group-hover:border-white/20 group-hover:bg-white/5 smooth-transition">
+                                                <div className="text-right z-10">
+                                                    <div className="font-medium text-[14px] text-white/80 tracking-wide truncate">{item.title}</div>
+                                                    <div className="text-[10px] text-white/40 font-mono mt-1">{label}</div>
+                                                </div>
+                                                <div className="flex justify-between items-end z-10 mb-1">
+                                                    <div className="text-[44px] font-semibold leading-none tracking-tighter">{days}</div>
+                                                    {item.icon && item.icon.startsWith('data:image') ? (
+                                                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/20 shadow-md mb-1">
+                                                            <img src={item.icon} alt="icon" className="w-full h-full object-cover" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-3xl pb-1 opacity-90 drop-shadow-md">{item.icon || '🐻'}</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <span className="mt-3 text-[10px] font-medium text-white/40 tracking-widest">{formatChineseDate(item.date)}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const AnniversaryForm = ({ initialData, onSave, onCancel, onDelete, showToast }) => {
+            const isEdit = !!initialData?.id;
+            const emojiList = ['🐻', '☕', '🌙', '🐰', '👋', '💖', '🍓', '🐙', '🪞', '🦄', '🐳', '🐱', '🐣', '🌈', '🎀', '🥕', '🏠', '🐾', '🎂', '🥂'];
+
+            const [formData, setFormData] = useState(initialData || { 
+                title: '', 
+                date: formatDate(new Date()), 
+                icon: '🐻',
+                eventType: 'annual' 
+            });
+
+            const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+            
+            const handleSubmit = () => { 
+                if (!formData.title) return showToast('标题不能为空'); 
+                if (!formData.date) return showToast('请选择日期'); 
+                onSave(formData); 
+            };
+
+            const handleIconUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 2 * 1024 * 1024) {
+                    showToast('图片过大，请上传2MB以内的图片');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setFormData(prev => ({ ...prev, icon: reader.result }));
+                    showToast('图片已上传');
+                };
+                reader.readAsDataURL(file);
+            };
+
+            return (
+                <div className="h-full animate-fade-in flex flex-col relative z-30 app-bg">
+                    <AtmosphereBackground />
+                    
+                    <div className="flex justify-between items-center px-6 pt-14 pb-4 shrink-0 z-20 glass-header rounded-b-[32px]">
+                        <button onClick={onCancel} className="text-white/60 interactive hover:text-white text-sm">取消</button>
+                        <h2 className="font-medium text-white tracking-wide">{isEdit ? '编辑纪念日' : '添加纪念日'}</h2>
+                        <button onClick={handleSubmit} className="text-white font-semibold interactive">完成</button>
+                    </div>
+
+                    <div className="p-5 flex-1 overflow-y-auto hide-scrollbar mt-2 pb-12 relative z-10">
+                        <div className="glass-panel !rounded-[24px] p-5 mb-6 flex flex-col items-center">
+                            <label className="relative cursor-pointer group mb-4">
+                                <div className="w-20 h-20 rounded-[20px] glass-panel flex items-center justify-center text-4xl shadow-inner border border-white/20 overflow-hidden">
+                                    {formData.icon && formData.icon.startsWith('data:image') ? (
+                                        <img src={formData.icon} alt="icon" className="w-full h-full object-cover" />
+                                    ) : (
+                                        formData.icon || '🐻'
+                                    )}
+                                </div>
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 smooth-transition bg-black/40 text-white rounded-[20px]">
+                                    <Icons.Camera />
+                                </div>
+                                <input type="file" accept="image/*" className="hidden" onChange={handleIconUpload} />
+                            </label>
+                            <div className="flex flex-wrap justify-center gap-2 mb-4">
+                                {emojiList.map(emoji => (
+                                    <button 
+                                        key={emoji} 
+                                        onClick={() => setFormData(prev => ({...prev, icon: emoji}))}
+                                        className={`w-10 h-10 text-xl flex items-center justify-center rounded-full smooth-transition interactive ${formData.icon === emoji ? 'bg-white/20 shadow-sm border border-white/30' : 'hover:bg-white/10 border border-transparent'}`}
+                                    >
+                                        {emoji}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="glass-panel !rounded-[24px] p-5 mb-6">
+                            <FormInputRow label="事件名称" name="title" value={formData.title} onChange={handleChange} placeholder="如：恋爱纪念日" />
+                            <FormInputRow label="日期" name="date" type="date" value={formData.date} onChange={handleChange} />
+                            
+                            <div className="py-4 flex flex-col">
+                                <label className="text-[11px] text-white/40 mb-3 uppercase tracking-wider">记录类型</label>
+                                <div className="flex space-x-2">
+                                    {[
+                                        { id: 'elapsed', label: '累计日', desc: '记录过去的天数' },
+                                        { id: 'countdown', label: '倒数日', desc: '期待未来的日子' },
+                                        { id: 'annual', label: '每年重复', desc: '生日或年度纪念' }
+                                    ].map(t => (
+                                        <button key={t.id} type="button" onClick={() => setFormData({...formData, eventType: t.id})} 
+                                                className={`flex-1 py-2 text-xs rounded-xl smooth-transition interactive flex flex-col items-center justify-center space-y-1 border 
+                                                ${formData.eventType === t.id ? 'bg-white/20 border-white/30 text-white shadow-sm' : 'bg-transparent border-white/10 text-white/50'}`}>
+                                            <span className="font-medium">{t.label}</span>
+                                            <span className="text-[9px] text-white/40">{t.desc}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {isEdit && (
+                            <button onClick={onDelete} className="w-full py-4 text-[#ff6b6b] glass-panel border border-[#ff6b6b]/20 !rounded-[20px] font-medium mb-10 interactive hover:bg-[#ff6b6b]/10 backdrop-blur-md">
+                                删除记录
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const ProfileSubView = ({ type, onBack, passwords, anniversaries, schedules, userProfile, setUserProfile, showConfirm }) => {
+            const titleMap = {
+                'passwords': '密码资产概览',
+                'anniversaries': '纪念日概览',
+                'schedules': '日程安排概览',
+                'diaries': '我的日记本'
+            };
+
+            const typeColors = {
+                'work': 'bg-[#6B8ECC]',
+                'personal': 'bg-[#E6C8E6]',
+                'important': 'bg-[#ff6b6b]',
+                'learning': 'bg-[#F4D35E]'
+            };
+
+            const [newDiaryEntry, setNewDiaryEntry] = useState('');
+            const diaries = userProfile.diaries || [];
+
+            const handleAddDiary = () => {
+                if (!newDiaryEntry.trim()) return;
+                const now = new Date();
+                const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                const newDiary = {
+                    id: generateId(),
+                    text: newDiaryEntry.trim(),
+                    time: timeStr
+                };
+                setUserProfile(prev => ({ ...prev, diaries: [newDiary, ...(prev.diaries || [])] }));
+                setNewDiaryEntry('');
+            };
+
+            const handleRemoveDiary = (id) => {
+                showConfirm('确定删除这条日记吗？', () => {
+                    setUserProfile(prev => ({
+                        ...prev,
+                        diaries: prev.diaries.filter(d => d.id !== id)
+                    }));
+                });
+            };
+
+            return (
+                <div className="h-full animate-fade-in flex flex-col relative z-30 app-bg">
+                    <AtmosphereBackground />
+                    
+                    <div className="flex items-center px-4 pt-14 pb-4 glass-header shrink-0 z-20 rounded-b-[32px]">
+                        <button onClick={onBack} className="text-white/80 flex items-center interactive glass-button py-1.5 px-3 !rounded-full text-sm font-medium">
+                            <Icons.Back /> <span className="ml-1">返回</span>
+                        </button>
+                        <h2 className="font-medium text-white tracking-wide ml-4 text-[17px] flex items-center space-x-2">
+                            {type === 'passwords' && <Icons.Vault />}
+                            {type === 'anniversaries' && <Icons.Gift />}
+                            {type === 'schedules' && <Icons.Calendar />}
+                            {type === 'diaries' && <Icons.PenTool />}
+                            <span>{titleMap[type]}</span>
+                        </h2>
+                    </div>
+
+                    <div className="p-5 flex-1 overflow-y-auto hide-scrollbar pb-24 relative z-10">
+                        {type === 'passwords' && (
+                            <div className="space-y-4">
+                                {passwords.length === 0 ? <p className="text-center text-white/40 text-[13px] py-12 glass-panel !rounded-[24px] border-dashed border-white/20">暂无记录</p> :
+                                passwords.map(item => (
+                                    <div key={item.id} className="glass-panel !rounded-[24px] p-5 flex items-center space-x-4 border border-white/5 hover:bg-white/5 smooth-transition">
+                                        <div className="w-12 h-12 rounded-[16px] bg-gradient-to-tr from-white/10 to-white/5 flex items-center justify-center text-white text-lg font-medium shrink-0 shadow-inner border border-white/10">{item.name.substring(0,1).toUpperCase()}</div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-medium text-white/90 text-[15px] tracking-wide truncate">{item.name}</div>
+                                            <div className="text-[12px] text-white/40 mt-1.5 font-mono tracking-wider truncate">{item.account || item.email || '未填账号'}</div>
+                                        </div>
+                                        <span className="text-[10px] px-3 py-1 bg-white/10 text-white/60 rounded-full shrink-0 border border-white/10">{item.category}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        
+                        {type === 'anniversaries' && (
+                            <div className="space-y-4">
+                                {anniversaries.length === 0 ? <p className="text-center text-white/40 text-[13px] py-12 glass-panel !rounded-[24px] border-dashed border-white/20">暂无记录</p> :
+                                [...anniversaries].sort((a, b) => getAnniversaryInfo(a).days - getAnniversaryInfo(b).days).map(item => {
+                                    const { days, label } = getAnniversaryInfo(item);
+                                    return (
+                                        <div key={item.id} className="glass-panel !rounded-[24px] p-5 flex justify-between items-center border border-white/5 hover:bg-white/5 smooth-transition">
+                                            <div className="flex items-center space-x-4">
+                                                <div className="w-12 h-12 rounded-[16px] bg-white/10 flex items-center justify-center text-2xl shadow-inner border border-white/10 backdrop-blur-sm overflow-hidden">
+                                                    {item.icon && item.icon.startsWith('data:image') ? (
+                                                        <img src={item.icon} alt="icon" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        item.icon || '🐻'
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-medium text-white/90 text-[15px] tracking-wide truncate">{item.title}</h3>
+                                                    <div className="text-[11px] text-white/40 mt-1.5 font-mono tracking-wider">{item.date}</div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right pl-4 border-l border-white/10 py-1 shrink-0">
+                                                <div className="text-[10px] text-white/40 mb-0.5 uppercase tracking-wider">{label}</div>
+                                                <div className="text-2xl font-semibold text-[#E6C8E6] drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">{days} <span className="text-[10px] font-normal text-white/40 uppercase">Days</span></div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {type === 'schedules' && (
+                            <div className="space-y-4">
+                                {schedules.length === 0 ? <p className="text-center text-white/40 text-[13px] py-12 glass-panel !rounded-[24px] border-dashed border-white/20">暂无记录</p> :
+                                [...schedules].sort((a, b) => new Date(a.date) - new Date(b.date)).map(event => (
+                                    <div key={event.id} className="glass-panel !rounded-[24px] p-5 relative overflow-hidden border border-white/5 hover:bg-white/5 smooth-transition">
+                                        <div className={`absolute top-0 left-0 w-1.5 h-full ${typeColors[event.type] || 'bg-white/30'}`}></div>
+                                        <div className="pl-3">
+                                            <h3 className="text-[16px] font-medium text-white/90 truncate tracking-wide">{event.title}</h3>
+                                            <div className="flex items-center justify-between mt-4">
+                                                <span className="text-[11px] text-white/70 font-mono bg-white/10 px-3 py-1 rounded-[8px] border border-white/5 shadow-inner">{event.date}</span>
+                                                <span className="text-[11px] text-white/50 font-mono flex items-center space-x-1.5 bg-black/20 px-3 py-1 rounded-[8px]"><Icons.Clock /><span className="ml-1 tracking-wider">{event.timeStr}</span></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {type === 'diaries' && (
+                            <div className="flex flex-col h-full">
+                                <div className="mb-6 shrink-0 relative glass-panel !rounded-[28px] p-2">
+                                    <textarea 
+                                        value={newDiaryEntry}
+                                        onChange={(e) => setNewDiaryEntry(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleAddDiary();
+                                            }
+                                        }}
+                                        placeholder="记录今天的心情或想法... (按 Enter 保存)"
+                                        className="w-full bg-black/20 border border-white/10 rounded-[24px] p-5 text-[14px] text-white outline-none resize-none h-36 shadow-inner placeholder-white/30 focus:border-[#ff6b6b]/50 smooth-transition leading-relaxed"
+                                    />
+                                    <div className="absolute bottom-6 right-6 text-[11px] text-white/30 font-mono bg-black/40 px-2 py-1 rounded-md backdrop-blur-md">
+                                        Shift + Enter 换行
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    {diaries.length === 0 ? (
+                                        <div className="text-center py-12 text-white/30 text-[13px] flex flex-col items-center glass-panel !rounded-[28px] border-dashed border-white/20">
+                                            <Icons.PenTool />
+                                            <span className="mt-4 tracking-wide">还没有写过日记，开始记录吧！</span>
+                                        </div>
+                                    ) : (
+                                        diaries.map((diary) => (
+                                            <div key={diary.id} className="glass-panel !rounded-[28px] p-6 border border-white/5 group relative hover:bg-white/5 transition-colors shadow-lg">
+                                                <div className="flex justify-between items-center mb-4 border-b border-white/5 pb-3">
+                                                    <span className="text-[12px] text-[#ff6b6b] font-mono tracking-widest bg-[#ff6b6b]/10 px-3 py-1 rounded-lg">{diary.time}</span>
+                                                    <button 
+                                                        onClick={() => handleRemoveDiary(diary.id)} 
+                                                        className="text-white/20 hover:text-[#ff6b6b] opacity-0 group-hover:opacity-100 smooth-transition p-1.5 bg-black/20 rounded-full"
+                                                        title="删除这条日记"
+                                                    >
+                                                        <Icons.Trash />
+                                                    </button>
+                                                </div>
+                                                <div className="text-[15px] text-white/90 leading-relaxed whitespace-pre-wrap tracking-wide">
+                                                    {diary.text}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const ProfileView = ({ categories, setCategories, userProfile, setUserProfile, showToast, passwords, anniversaries, schedules, onOpenSubView, onLogout, showConfirm, onExport, onImport }) => {
+            const [editingCategory, setEditingCategory] = useState(false);
+            const [newCat, setNewCat] = useState({ group: '工作', name: '' });
+            const [isEditingName, setIsEditingName] = useState(false);
+            const [tempName, setTempName] = useState('');
+            const [isEditingSlogan, setIsEditingSlogan] = useState(false);
+            const [tempSlogan, setTempSlogan] = useState('');
+
+            const totalPasswords = passwords.length;
+            const totalAnniversaries = anniversaries.length;
+            const totalSchedules = schedules.length;
+            const totalDiaries = (userProfile.diaries || []).length;
+
+            const handleAddCategory = () => {
+                if(!newCat.name) return;
+                setCategories(prev => {
+                    const newCats = {...prev};
+                    if(!newCats[newCat.group]) newCats[newCat.group] = [];
+                    if(!newCats[newCat.group].includes(newCat.name)) newCats[newCat.group].push(newCat.name);
+                    return newCats;
+                });
+                setNewCat(prev => ({...prev, name: ''}));
+            };
+
+            const handleSaveName = () => {
+                if (tempName.trim()) {
+                    setUserProfile(prev => ({ ...prev, nickname: tempName.trim() }));
+                }
+                setIsEditingName(false);
+            };
+
+            const handleSaveSlogan = () => {
+                setUserProfile(prev => ({ ...prev, slogan: tempSlogan }));
+                setIsEditingSlogan(false);
+            };
+
+            const handleImageUpload = (e, type) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (file.size > 2 * 1024 * 1024) {
+                    showToast('图片过大，请上传2MB以内的图片');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setUserProfile(prev => ({ ...prev, [type]: reader.result }));
+                    showToast(type === 'avatar' ? '头像已更新' : '背景已更新');
+                };
+                reader.readAsDataURL(file);
+            };
+
+            return (
+                <div className="animate-fade-in h-full overflow-y-auto hide-scrollbar pb-24">
+                    <div className="relative mb-8 pt-20 pb-8 border-b border-white/10">
+                        <label 
+                            className="absolute inset-0 w-full h-full block cursor-pointer group z-0" 
+                            style={{ 
+                                WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)', 
+                                maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)' 
+                            }}
+                        >
+                            {userProfile.background ? (
+                                <img src={userProfile.background} className="w-full h-full object-cover opacity-70 group-hover:opacity-40 smooth-transition" alt="background" />
+                            ) : (
+                                <div className="w-full h-full bg-gradient-to-tr from-[#4b5d8a]/40 to-[#9e7ca2]/40 group-hover:opacity-60 smooth-transition"></div>
+                            )}
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 smooth-transition bg-black/20">
+                                <div className="text-white/90 p-3 rounded-full bg-black/40 backdrop-blur-md flex items-center space-x-2 text-sm font-medium">
+                                    <Icons.Camera /> <span>更换背景</span>
+                                </div>
+                            </div>
+                            <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'background')} />
+                        </label>
+
+                        <div className="relative z-10 flex flex-col items-center px-6 mt-6">
+                            <label className="relative inline-block cursor-pointer group mb-5">
+                                <div className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden relative shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-white/20 bg-white/5 backdrop-blur-md">
+                                    {userProfile.avatar ? (
+                                        <img src={userProfile.avatar} className="w-full h-full object-cover group-hover:opacity-50 smooth-transition" alt="avatar" />
+                                    ) : (
+                                        <Icons.User className="w-12 h-12 text-white/40 group-hover:text-white/70 smooth-transition" />
+                                    )}
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 smooth-transition bg-black/40 text-white">
+                                        <Icons.Camera />
+                                    </div>
+                                </div>
+                                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'avatar')} />
+                            </label>
+
+                            <div className="flex flex-col items-center w-full">
+                                {isEditingName ? (
+                                    <input 
+                                        type="text" 
+                                        value={tempName} 
+                                        onChange={e => setTempName(e.target.value)} 
+                                        onBlur={handleSaveName}
+                                        onKeyDown={e => e.key === 'Enter' && handleSaveName()}
+                                        autoFocus
+                                        placeholder="输入新昵称"
+                                        className="text-center bg-transparent border-b border-white/50 text-[22px] font-semibold text-white outline-none w-2/3 pb-1 mb-2 shadow-none"
+                                    />
+                                ) : (
+                                    <div className="flex items-center justify-center space-x-2 group cursor-pointer interactive mb-1" onClick={() => { setIsEditingName(true); setTempName(userProfile.nickname); }}>
+                                        <h1 className="text-[22px] font-semibold text-white tracking-wide truncate max-w-[250px] text-center drop-shadow-md">{userProfile.nickname}</h1>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex flex-col items-center w-full px-4 mb-4">
+                                {isEditingSlogan ? (
+                                    <input 
+                                        type="text" 
+                                        value={tempSlogan} 
+                                        onChange={e => setTempSlogan(e.target.value)} 
+                                        onBlur={handleSaveSlogan}
+                                        onKeyDown={e => e.key === 'Enter' && handleSaveSlogan()}
+                                        autoFocus
+                                        placeholder="输入个性标语..."
+                                        className="text-center bg-transparent border-b border-white/30 text-[13px] italic text-white/90 outline-none w-full pb-1 shadow-none tracking-wide"
+                                    />
+                                ) : (
+                                    <div 
+                                        className="text-[13px] text-white/60 italic tracking-wide cursor-pointer hover:text-white/90 smooth-transition text-center w-full px-2 min-h-[24px] flex items-center justify-center" 
+                                        onClick={() => { setIsEditingSlogan(true); setTempSlogan(userProfile.slogan || ''); }}
+                                    >
+                                        {userProfile.slogan || '点击添加个性标语...'}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="px-6">
+                        <div className="mb-8">
+                            <h2 className="text-[14px] text-white/80 font-medium tracking-widest uppercase mb-4 px-2">Data Overview / 数据概览</h2>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="glass-panel p-5 !rounded-[24px] flex flex-col interactive border border-transparent hover:border-white/20 hover:bg-white/5 cursor-pointer smooth-transition" onClick={() => onOpenSubView('passwords')}>
+                                    <div className="flex items-center space-x-2 mb-5">
+                                        <div className="text-[#6B8ECC]"><Icons.Vault /></div>
+                                        <span className="text-[13px] font-medium text-white/70 tracking-wider">密码</span>
+                                    </div>
+                                    <div className="flex flex-col flex-1 justify-end mt-auto">
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-4xl font-semibold text-white tracking-tight leading-none">{totalPasswords}</div>
+                                            <div className="text-white/20"><Icons.ChevronRight /></div>
+                                        </div>
+                                        <div className="text-[10px] text-white/40 tracking-wider mt-3">已端到端加密保护</div>
+                                    </div>
+                                </div>
+                                
+                                <div className="glass-panel p-5 !rounded-[24px] flex flex-col interactive border border-transparent hover:border-white/20 hover:bg-white/5 cursor-pointer smooth-transition" onClick={() => onOpenSubView('anniversaries')}>
+                                    <div className="flex items-center space-x-2 mb-5">
+                                        <div className="text-[#E6C8E6]"><Icons.Gift /></div>
+                                        <span className="text-[13px] font-medium text-white/70 tracking-wider">纪念日</span>
+                                    </div>
+                                    <div className="flex flex-col flex-1 justify-end mt-auto">
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-4xl font-semibold text-white tracking-tight leading-none">{totalAnniversaries}</div>
+                                            <div className="text-white/20"><Icons.ChevronRight /></div>
+                                        </div>
+                                        <div className="text-[10px] text-white/40 tracking-wider mt-3">记录的重要日子</div>
+                                    </div>
+                                </div>
+
+                                <div className="glass-panel p-5 !rounded-[24px] flex flex-col interactive border border-transparent hover:border-white/20 hover:bg-white/5 cursor-pointer smooth-transition" onClick={() => onOpenSubView('schedules')}>
+                                    <div className="flex items-center space-x-2 mb-5">
+                                        <div className="text-[#F4D35E]"><Icons.Calendar /></div>
+                                        <span className="text-[13px] font-medium text-white/70 tracking-wider">日程</span>
+                                    </div>
+                                    <div className="flex flex-col flex-1 justify-end mt-auto">
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-4xl font-semibold text-white tracking-tight leading-none">{totalSchedules}</div>
+                                            <div className="text-white/20"><Icons.ChevronRight /></div>
+                                        </div>
+                                        <div className="text-[10px] text-white/40 tracking-wider mt-3">待办事项与计划</div>
+                                    </div>
+                                </div>
+
+                                <div className="glass-panel p-5 !rounded-[24px] flex flex-col interactive border border-transparent hover:border-white/20 hover:bg-white/5 cursor-pointer smooth-transition" onClick={() => onOpenSubView('diaries')}>
+                                    <div className="flex items-center space-x-2 mb-5">
+                                        <div className="text-[#ff6b6b]"><Icons.PenTool /></div>
+                                        <span className="text-[13px] font-medium text-white/70 tracking-wider">日记</span>
+                                    </div>
+                                    <div className="flex flex-col flex-1 justify-end mt-auto">
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-4xl font-semibold text-white tracking-tight leading-none">{totalDiaries}</div>
+                                            <div className="text-white/20"><Icons.ChevronRight /></div>
+                                        </div>
+                                        <div className="text-[10px] text-white/40 tracking-wider mt-3">记录生活碎片</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="glass-panel !rounded-[32px] overflow-hidden mb-6 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+                            <div className="px-6 py-5 border-b border-white/10 font-medium text-white/80 text-sm tracking-widest uppercase bg-white/5">
+                                系统设定
+                            </div>
+                            <div className="px-6 py-5 flex justify-between items-center interactive hover:bg-white/5 border-b border-white/5" onClick={() => setEditingCategory(!editingCategory)}>
+                                <span className="text-[15px] text-white/90 font-medium">资源分类管理</span>
+                                <div className="text-white/30"><Icons.ChevronRight /></div>
+                            </div>
+                            
+                            {editingCategory && (
+                                <div className="px-6 py-5 bg-black/20 shadow-inner">
+                                    <div className="flex space-x-3 mb-5">
+                                        <select className="glass-input !rounded-[12px] p-2.5 text-sm focus:outline-none appearance-none" value={newCat.group} onChange={(e) => setNewCat({...newCat, group: e.target.value})}><option value="工作" className="text-black">工作</option><option value="个人" className="text-black">个人</option></select>
+                                        <input type="text" placeholder="新建目录名" className="flex-1 glass-input !rounded-[12px] p-2.5 text-sm focus:outline-none placeholder-white/30" value={newCat.name} onChange={(e) => setNewCat({...newCat, name: e.target.value})} />
+                                        <button onClick={handleAddCategory} className="glass-button px-4 rounded-[12px] text-sm font-medium text-white interactive">添加</button>
+                                    </div>
+                                    <div className="text-[12px] text-white/40 glass-panel !rounded-[16px] p-4 !bg-white/5 !border-white/5 font-mono tracking-wider leading-relaxed">
+                                        <span className="text-white/80 font-semibold mb-1 block">Storage Status</span>
+                                        Work Space: {categories['工作'].length} Folders<br/>
+                                        Personal Space: {categories['个人'].length} Folders
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="px-6 py-5 flex justify-between items-center interactive hover:bg-white/5 border-b border-white/5">
+                                <span className="text-[15px] text-white/90 font-medium">云端同步 (iCloud)</span>
+                                <div className="w-12 h-7 bg-white/20 border border-white/30 rounded-full flex items-center p-1 justify-end shadow-inner">
+                                    <div className="w-5 h-5 bg-white rounded-full shadow-sm"></div>
+                                </div>
+                            </div>
+                            
+                            <div className="px-6 py-5 flex justify-between items-center interactive hover:bg-white/5 text-white/90 cursor-pointer" onClick={onExport}>
+                                <span className="text-[15px] font-medium">导出数据备份 (JSON)</span>
+                                <Icons.Download />
+                            </div>
+
+                            <label className="px-6 py-5 flex justify-between items-center interactive hover:bg-white/5 text-white/90 border-t border-white/5 cursor-pointer">
+                                <span className="text-[15px] font-medium">导入数据恢复 (JSON)</span>
+                                <Icons.Upload />
+                                <input type="file" accept=".json" className="hidden" onChange={onImport} />
+                            </label>
+
+                            <div className="px-6 py-5 flex justify-between items-center interactive hover:bg-[#ff6b6b]/10 text-[#ff6b6b] border-t border-white/5" onClick={() => showConfirm('确定要退出当前账号并返回欢迎页吗？', onLogout)}>
+                                <span className="text-[15px] font-medium">退出登录</span>
+                                <Icons.LogOut />
+                            </div>
+                        </div>
+
+                        <div className="text-center mt-12">
+                            <p className="text-[11px] text-white/30 uppercase tracking-[0.2em] font-mono">End-to-End Encrypted</p>
+                            <p className="text-[11px] text-white/20 mt-2 font-mono tracking-wider">v4.6 Immersive Profile</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const StatusBar = () => (
+            <div className="flex justify-between items-center px-6 pt-4 text-[#7a6b9c] text-[13px] font-bold z-50 relative opacity-90">
+                <span>10:06</span>
+                <div className="flex space-x-1.5 items-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21L1 5C5 2 8 1 12 1C16 1 19 2 23 5L12 21Z"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22H22V2L2 22Z"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="18" height="10" rx="3"/><path d="M22 10V14" strokeWidth="2" strokeLinecap="round"/></svg>
+                </div>
+            </div>
+        );
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('vault'); 
+            const [currentView, setCurrentView] = useState('list');
+            const [categories, setCategories] = useState(() => JSON.parse(localStorage.getItem('pm_categories')) || initialCategories);
+            const [passwords, setPasswords] = useState(() => JSON.parse(localStorage.getItem('pm_passwords')) || []);
+            const [anniversaries, setAnniversaries] = useState(() => JSON.parse(localStorage.getItem('pm_anniversaries')) || [
+                { id: '1', title: '戴牙套', date: '2021-12-08', icon: '🥕', eventType: 'elapsed' },
+                { id: '2', title: '在一起', date: '2020-10-28', icon: '🐻', eventType: 'elapsed' },
+                { id: '3', title: '距离考研', date: '2026-12-25', icon: '🎓', eventType: 'countdown' },
+                { id: '4', title: '豆豆生日', date: '2026-09-13', icon: '🏠', eventType: 'annual' }
+            ]);
+            const [schedules, setSchedules] = useState(() => JSON.parse(localStorage.getItem('pm_schedules')) || []);
+            
+            const [userProfile, setUserProfile] = useState(() => JSON.parse(localStorage.getItem('pm_user_profile')) || {
+                nickname: 'ELIPHINI',
+                avatar: '', 
+                background: '',
+                slogan: '生活明朗，万物可爱。',
+                diaries: [
+                    { id: 'd1', text: '今天发现了一个超级好用的工具！', time: '2026-03-11 10:30' },
+                    { id: 'd2', text: '所谓的我，就是过去一切体验的总和。', time: '2026-03-10 15:00' }
+                ]
+            });
+
+            const [editingItem, setEditingItem] = useState(null);
+            const [toast, setToast] = useState({ visible: false, message: '' });
+            const [showAddMenu, setShowAddMenu] = useState(false);
+            const [confirmDialog, setConfirmDialog] = useState({ visible: false, message: '', onConfirm: null });
+
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            const [showLogin, setShowLogin] = useState(false);
+            const [loginUser, setLoginUser] = useState('');
+            const [loginPass, setLoginPass] = useState('');
+
+            useEffect(() => localStorage.setItem('pm_passwords', JSON.stringify(passwords)), [passwords]);
+            useEffect(() => localStorage.setItem('pm_anniversaries', JSON.stringify(anniversaries)), [anniversaries]);
+            useEffect(() => localStorage.setItem('pm_categories', JSON.stringify(categories)), [categories]);
+            useEffect(() => localStorage.setItem('pm_schedules', JSON.stringify(schedules)), [schedules]);
+            useEffect(() => localStorage.setItem('pm_user_profile', JSON.stringify(userProfile)), [userProfile]);
+
+            const showToast = (msg) => {
+                setToast({ visible: true, message: msg });
+                setTimeout(() => setToast({ visible: false, message: '' }), 2000);
+            };
+
+            const showConfirm = (message, onConfirm) => {
+                setConfirmDialog({ visible: true, message, onConfirm });
+            };
+
+            const closeConfirm = () => {
+                setConfirmDialog({ visible: false, message: '', onConfirm: null });
+            };
+
+            const handleAddCategoryToGroup = (group, catName) => {
+                if (!catName.trim()) return;
+                if (categories[group].includes(catName.trim())) {
+                    showToast('该目录已存在');
+                    return;
+                }
+                setCategories(prev => ({
+                    ...prev,
+                    [group]: [...prev[group], catName.trim()]
+                }));
+                showToast('已创建新目录');
+            };
+
+            const handleSavePassword = (data) => {
+                if (data.id) setPasswords(passwords.map(p => p.id === data.id ? data : p));
+                else setPasswords([...passwords, { ...data, id: generateId() }]);
+                showToast(data.id ? '已更新' : '已保存');
+                setCurrentView('list');
+                setActiveTab('vault');
+            };
+
+            const handleDeletePassword = (id) => {
+                showConfirm('此操作不可逆，确认删除？', () => {
+                    setPasswords(passwords.filter(p => p.id !== id));
+                    setCurrentView('list');
+                    showToast('已删除');
+                });
+            };
+
+            const handleSaveAnniversary = (data) => {
+                if (data.id) setAnniversaries(anniversaries.map(a => a.id === data.id ? data : a));
+                else setAnniversaries([...anniversaries, { ...data, id: generateId() }]);
+                showToast(data.id ? '已更新' : '已保存');
+                setCurrentView('list');
+                setActiveTab('anniversary');
+            };
+
+            const handleDeleteAnniversary = (id) => {
+                showConfirm('确认删除该纪念日？', () => {
+                    setAnniversaries(anniversaries.filter(a => a.id !== id));
+                    setCurrentView('list');
+                    showToast('已删除');
+                });
+            };
+
+            const handleSaveSchedule = (data) => {
+                if (data.id) setSchedules(schedules.map(s => s.id === data.id ? data : s));
+                else setSchedules([...schedules, { ...data, id: generateId() }]);
+                showToast(data.id ? '已更新日程' : '已添加日程');
+                setCurrentView('list');
+                setActiveTab('calendar');
+            };
+            
+            const handleDeleteSchedule = (id) => {
+                showConfirm('确认删除该日程？', () => {
+                    setSchedules(schedules.filter(s => s.id !== id));
+                    setCurrentView('list');
+                    showToast('已删除');
+                });
+            };
+
+            const handleRenameCategory = (group, oldName, newName) => {
+                if (!newName || oldName === newName) return;
+                if (categories[group].includes(newName)) {
+                    showToast('该名称已存在');
+                    return;
+                }
+                setCategories(prev => ({
+                    ...prev,
+                    [group]: prev[group].map(c => c === oldName ? newName : c)
+                }));
+                setPasswords(prev => prev.map(p => p.category === oldName ? { ...p, category: newName } : p));
+                showToast('目录已重命名');
+            };
+
+            const handleReorderCategories = (group, fromIndex, toIndex) => {
+                setCategories(prev => {
+                    const list = [...prev[group]];
+                    const [moved] = list.splice(fromIndex, 1);
+                    list.splice(toIndex, 0, moved);
+                    return { ...prev, [group]: list };
+                });
+            };
+
+            const handleDeleteCategory = (group, catName) => {
+                const itemsCount = passwords.filter(p => p.group === group && p.category === catName).length;
+                const confirmMsg = itemsCount > 0 
+                    ? `确认删除目录 "${catName}" 吗？该目录下的 ${itemsCount} 个凭证将被一并删除。`
+                    : `确认删除空目录 "${catName}" 吗？`;
+                    
+                showConfirm(confirmMsg, () => {
+                    setCategories(prev => ({
+                        ...prev,
+                        [group]: prev[group].filter(c => c !== catName)
+                    }));
+                    setPasswords(prev => prev.filter(p => !(p.group === group && p.category === catName)));
+                    showToast('已删除目录');
+                });
+            };
+
+            const copyToClipboard = (text) => {
+                if (!text) return;
+                const el = document.createElement('textarea');
+                el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+                showToast('已复制到剪贴板');
+            };
+
+            const navigateTo = (tab, view = 'list', item = null) => {
+                setActiveTab(tab);
+                setCurrentView(view);
+                if (view.includes('add') && !item) {
+                    setEditingItem(null);
+                } else if (item) {
+                    setEditingItem(item);
+                } else {
+                    setEditingItem(null);
+                }
+            };
+
+            const handleCreatePasswordInCategory = (group, category) => {
+                navigateTo('vault', 'add', { group, category });
+            };
+
+            const handleLoginClick = () => {
+                if (loginUser === 'ELIPHINI' && loginPass === '31') {
+                    setIsAuthenticated(true);
+                } else {
+                    showToast('账号或密码错误，请重试');
+                }
+            };
+
+            const handleLogout = () => {
+                setIsAuthenticated(false);
+                setShowLogin(false);
+                setLoginUser('');
+                setLoginPass('');
+                setActiveTab('vault');
+                setCurrentView('list');
+            };
+
+            const handleExportData = () => {
+                const data = { categories, passwords, anniversaries, schedules, userProfile };
+                const dataStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `ELIPHINI_Backup_${formatDate(new Date())}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                showToast('数据导出成功');
+            };
+
+            const handleImportData = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const parsedData = JSON.parse(event.target.result);
+                        if (parsedData.categories) setCategories(parsedData.categories);
+                        if (parsedData.passwords) setPasswords(parsedData.passwords);
+                        if (parsedData.anniversaries) setAnniversaries(parsedData.anniversaries);
+                        if (parsedData.schedules) setSchedules(parsedData.schedules);
+                        if (parsedData.userProfile) setUserProfile(parsedData.userProfile);
+                        showToast('数据恢复成功');
+                    } catch (error) {
+                        showToast('文件格式错误，导入失败');
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = null; 
+            };
+
+            if (!isAuthenticated) {
+                return (
+                    <div className="flex flex-col h-screen w-full max-w-md mx-auto relative overflow-hidden font-sans bg-[#f7eff4]">
+                        <div className="absolute top-0 left-0 w-full h-full" style={{ background: 'linear-gradient(170deg, #fceaf0 0%, #e8eaf6 40%, #f4f6fa 100%)' }}></div>
+                        <div className="absolute -top-20 -left-20 w-96 h-96 bg-[#f2d8e4] rounded-full mix-blend-multiply filter blur-[80px] opacity-70"></div>
+                        <div className="absolute top-[30%] -right-20 w-80 h-80 bg-[#d8e0f2] rounded-full mix-blend-multiply filter blur-[80px] opacity-70"></div>
+
+                        <StatusBar />
+
+                        {!showLogin ? (
+                            <div className="flex-1 flex flex-col items-center justify-center cursor-pointer relative z-10 animate-fade-in w-full h-full" onClick={() => setShowLogin(true)}>
+                                <h1 className="text-[56px] font-extrabold text-[#7a6b9c] mb-2 tracking-wide drop-shadow-sm">Hello!</h1>
+                                <p className="text-[14px] text-[#7a6b9c] font-medium tracking-[0.05em]">Welcome to ELIPHINI's world!</p>
+                                
+                                <div className="absolute bottom-10 text-center w-full px-6 opacity-40">
+                                    <p className="text-[10px] text-[#7a6b9c] tracking-wider leading-relaxed font-semibold">
+                                        By signing up, you agree to the<br/>
+                                        <span className="border-b border-[#7a6b9c]/50 pb-[1px]">User Agreement & Privacy Policy</span>
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col px-8 relative z-10 animate-fade-in justify-center">
+                                <div className="mb-12">
+                                    <h1 className="text-[32px] font-bold text-[#7a6b9c] tracking-wide leading-tight drop-shadow-sm">
+                                        Log in<br/>
+                                        <span className="text-[24px] opacity-80">to account</span>
+                                    </h1>
+                                </div>
+
+                                <div className="space-y-4 mb-8">
+                                    <input
+                                        type="text"
+                                        placeholder="Username"
+                                        value={loginUser}
+                                        onChange={e => setLoginUser(e.target.value)}
+                                        className="w-full bg-white/60 backdrop-blur-md border border-white/80 rounded-full px-6 py-4 text-[#7a6b9c] placeholder-[#aba0c4] shadow-[0_8px_16px_rgba(122,107,156,0.05)] outline-none focus:bg-white smooth-transition text-[14px] font-medium"
+                                    />
+                                    <input
+                                        type="password"
+                                        placeholder="Password"
+                                        value={loginPass}
+                                        onChange={e => setLoginPass(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleLoginClick()}
+                                        className="w-full bg-white/60 backdrop-blur-md border border-white/80 rounded-full px-6 py-4 text-[#7a6b9c] placeholder-[#aba0c4] shadow-[0_8px_16px_rgba(122,107,156,0.05)] outline-none focus:bg-white smooth-transition text-[14px] font-medium tracking-widest"
+                                    />
+                                </div>
+
+                                <div className="flex justify-center mb-10">
+                                    <button
+                                        onClick={handleLoginClick}
+                                        className="w-2/3 bg-gradient-to-r from-[#bcabe0] to-[#a393cc] text-white rounded-full py-3.5 text-[15px] font-bold tracking-wide shadow-[0_10px_20px_rgba(158,139,196,0.3)] hover:shadow-[0_12px_25px_rgba(158,139,196,0.4)] active:scale-95 smooth-transition"
+                                    >
+                                        Log in
+                                    </button>
+                                </div>
+
+                                <div className="mt-4 mb-10 w-full flex flex-col space-y-3.5 items-center text-center px-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">所谓的我，</p>
+                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">就是过去一切体验的总和，</p>
+                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">我是我接触过的人，</p>
+                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">创造过的物，</p>
+                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">感受过的情爱，</p>
+                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">迷失过的痛苦等等，</p>
+                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">所有的一切才成为此刻的我，</p>
+                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm pl-1">少一点都不是。</p>
+                                </div>
+
+                                <div className="text-center w-full pb-8 opacity-40 mt-auto">
+                                    <p className="text-[10px] text-[#7a6b9c] tracking-wider leading-relaxed font-semibold">
+                                        By signing in, you agree to the<br/>
+                                        <span className="border-b border-[#7a6b9c]/50 pb-[1px]">User Agreement & Privacy Policy</span>
+                                    </p>
+                                </div>
+
+                                <div className={`fixed top-12 left-1/2 transform -translate-x-1/2 bg-white/80 backdrop-blur-md border border-white text-[#7a6b9c] px-6 py-3 rounded-full z-50 smooth-transition text-sm font-bold tracking-wide shadow-[0_10px_30px_rgba(122,107,156,0.15)] ${toast.visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+                                    {toast.message}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex flex-col h-screen w-full max-w-md mx-auto app-bg relative shadow-2xl overflow-hidden text-white font-sans selection:bg-white/30">
+                    <AtmosphereBackground />
+                    
+                    <div className="flex-1 flex flex-col overflow-hidden relative z-10">
+                        {activeTab === 'vault' && currentView === 'list' && <VaultView passwords={passwords} categories={categories} onOpenDetail={(item) => navigateTo('vault', 'detail', item)} onRenameCategory={handleRenameCategory} onReorderCategories={handleReorderCategories} onAddCategory={handleAddCategoryToGroup} onDeleteCategory={handleDeleteCategory} onCreatePassword={handleCreatePasswordInCategory} />}
+                        {currentView === 'add' && <PasswordForm categories={categories} initialData={editingItem} onSave={handleSavePassword} onCancel={() => navigateTo('vault')} showToast={showToast} />}
+                        {currentView === 'edit' && <PasswordForm initialData={editingItem} categories={categories} onSave={handleSavePassword} onCancel={() => navigateTo('vault', 'detail', editingItem)} onDelete={() => handleDeletePassword(editingItem.id)} showToast={showToast} />}
+                        {currentView === 'detail' && <PasswordDetail item={editingItem} onEdit={() => navigateTo('vault', 'edit', editingItem)} onBack={() => navigateTo('vault')} onCopy={copyToClipboard} />}
+                        
+                        {activeTab === 'anniversary' && currentView === 'list' && <AnniversaryView anniversaries={anniversaries} onOpenDetail={(item) => navigateTo('anniversary', 'edit_anniv', item)} onCreate={() => navigateTo('anniversary', 'add_anniv')} />}
+                        {(currentView === 'add_anniv' || currentView === 'edit_anniv') && <AnniversaryForm initialData={editingItem} onSave={handleSaveAnniversary} onCancel={() => navigateTo('anniversary')} onDelete={() => handleDeleteAnniversary(editingItem.id)} showToast={showToast} />}
+
+                        {activeTab === 'calendar' && currentView === 'list' && <CalendarView schedules={schedules} onOpenDetail={(item) => navigateTo('calendar', 'edit_schedule', item)} onAddSchedule={(date) => navigateTo('calendar', 'add_schedule', { date })} />}
+                        {(currentView === 'add_schedule' || currentView === 'edit_schedule') && <ScheduleForm initialData={editingItem} onSave={handleSaveSchedule} onCancel={() => navigateTo('calendar')} onDelete={() => handleDeleteSchedule(editingItem?.id)} showToast={showToast} />}
+
+                        {activeTab === 'profile' && currentView === 'list' && <ProfileView categories={categories} setCategories={setCategories} userProfile={userProfile} setUserProfile={setUserProfile} showToast={showToast} passwords={passwords} anniversaries={anniversaries} schedules={schedules} onOpenSubView={(type) => navigateTo('profile', 'overview_' + type)} onLogout={handleLogout} showConfirm={showConfirm} onExport={handleExportData} onImport={handleImportData} />}
+                        {activeTab === 'profile' && currentView.startsWith('overview_') && (
+                            <ProfileSubView 
+                                type={currentView.replace('overview_', '')} 
+                                onBack={() => navigateTo('profile', 'list')} 
+                                passwords={passwords} 
+                                anniversaries={anniversaries} 
+                                schedules={schedules} 
+                                userProfile={userProfile} 
+                                setUserProfile={setUserProfile} 
+                                showConfirm={showConfirm}
+                            />
+                        )}
+                    </div>
+
+                    <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 flex flex-col justify-end smooth-transition ${showAddMenu ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setShowAddMenu(false)}>
+                        <div className={`glass-panel border-b-0 border-x-0 !rounded-t-[40px] !rounded-b-none w-full max-w-md mx-auto p-8 pb-16 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] smooth-transition ${showAddMenu ? 'translate-y-0' : 'translate-y-full'}`} onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-between items-center mb-8">
+                                <h3 className="text-xl font-medium tracking-wide text-white">创建新记录</h3>
+                                <button onClick={() => setShowAddMenu(false)} className="text-white/50 p-2 interactive hover:text-white bg-white/5 rounded-full"><Icons.Close /></button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4">
+                                <button onClick={() => { setShowAddMenu(false); navigateTo('calendar', 'add_schedule'); }} className="glass-panel !bg-white/5 p-4 rounded-3xl flex flex-col items-center justify-center space-y-3 interactive border-white/10 hover:border-white/30 hover:bg-white/10">
+                                    <div className="w-12 h-12 bg-white/10 text-[#6B8ECC] rounded-full flex items-center justify-center shadow-inner"><Icons.List /></div>
+                                    <span className="font-medium text-white/90 text-[13px]">日程安排</span>
+                                </button>
+                                <button onClick={() => { setShowAddMenu(false); navigateTo('vault', 'add'); }} className="glass-panel !bg-white/5 p-4 rounded-3xl flex flex-col items-center justify-center space-y-3 interactive border-white/10 hover:border-white/30 hover:bg-white/10">
+                                    <div className="w-12 h-12 bg-white/10 text-white rounded-full flex items-center justify-center shadow-inner"><Icons.Vault /></div>
+                                    <span className="font-medium text-white/90 text-[13px]">密码资产</span>
+                                </button>
+                                <button onClick={() => { setShowAddMenu(false); navigateTo('anniversary', 'add_anniv'); }} className="glass-panel !bg-white/5 p-4 rounded-3xl flex flex-col items-center justify-center space-y-3 interactive border-white/10 hover:border-white/30 hover:bg-white/10">
+                                    <div className="w-12 h-12 bg-white/10 text-[#E6C8E6] rounded-full flex items-center justify-center shadow-inner"><Icons.Gift /></div>
+                                    <span className="font-medium text-white/90 text-[13px]">纪念日</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {currentView === 'list' && (
+                        <div className="absolute bottom-0 w-full glass-bottom-nav px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] flex justify-around items-end z-20">
+                            {/* 修复：将底部导航栏注释移出 JSX 表达式以防止解析错误 */}
+                            <NavButton icon={<Icons.Calendar />} label="日程" active={activeTab === 'calendar'} onClick={() => navigateTo('calendar')} />
+                            <NavButton icon={<Icons.Vault />} label="密码库" active={activeTab === 'vault'} onClick={() => navigateTo('vault')} />
+                            
+                            <div className="relative -top-3 w-1/5 flex justify-center">
+                                <button onClick={() => setShowAddMenu(true)} className="w-[46px] h-[46px] rounded-full flex items-center justify-center text-white border border-white/40 bg-white/10 backdrop-blur-md interactive shadow-[0_4px_16px_rgba(0,0,0,0.15)]">
+                                    <Icons.Plus />
+                                </button>
+                            </div>
+
+                            <NavButton icon={<Icons.Gift />} label="纪念日" active={activeTab === 'anniversary'} onClick={() => navigateTo('anniversary')} />
+                            <NavButton icon={<Icons.User />} label="个人" active={activeTab === 'profile'} onClick={() => navigateTo('profile')} />
+                        </div>
+                    )}
+                    
+                    {confirmDialog.visible && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-6 animate-fade-in" onClick={closeConfirm}>
+                            <div className="glass-panel p-6 !rounded-[24px] w-full max-w-[300px] shadow-2xl scale-100 transition-transform" onClick={e => e.stopPropagation()}>
+                                <div className="flex flex-col items-center text-center">
+                                    <div className="w-12 h-12 rounded-full bg-[#ff6b6b]/20 text-[#ff6b6b] flex items-center justify-center mb-4">
+                                        <Icons.Trash />
+                                    </div>
+                                    <p className="text-white font-medium text-[15px] mb-6">{confirmDialog.message}</p>
+                                    <div className="flex space-x-3 w-full">
+                                        <button onClick={closeConfirm} className="flex-1 py-2.5 bg-white/10 rounded-[12px] text-white/70 text-sm font-medium interactive hover:bg-white/20">取消</button>
+                                        <button onClick={() => { confirmDialog.onConfirm(); closeConfirm(); }} className="flex-1 py-2.5 bg-[#ff6b6b] rounded-[12px] text-white text-sm font-medium interactive shadow-[0_4px_12px_rgba(255,107,107,0.3)] hover:bg-[#ff5252]">删除</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <Toast message={toast.message} visible={toast.visible} />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
