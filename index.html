@@ -2026,53 +2026,55 @@
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex-1 flex flex-col px-8 relative z-10 animate-fade-in justify-center h-full">
-                                <div className="mb-12">
-                                    <h1 className="text-[32px] font-bold text-[#7a6b9c] tracking-wide leading-tight drop-shadow-sm">
-                                        Log in<br/>
-                                        <span className="text-[24px] opacity-80">to account</span>
-                                    </h1>
+                            <div className="flex-1 flex flex-col px-8 relative z-10 animate-fade-in h-full pt-16">
+                                <div className="flex flex-col">
+                                    <div className="mb-10">
+                                        <h1 className="text-[32px] font-bold text-[#7a6b9c] tracking-wide leading-tight drop-shadow-sm">
+                                            Log in<br/>
+                                            <span className="text-[24px] opacity-80">to account</span>
+                                        </h1>
+                                    </div>
+
+                                    <div className="space-y-4 mb-8">
+                                        <input
+                                            type="text"
+                                            placeholder="Username"
+                                            value={loginUser}
+                                            onChange={e => setLoginUser(e.target.value)}
+                                            className="w-full bg-white/60 backdrop-blur-md border border-white/80 rounded-full px-6 py-4 text-[#7a6b9c] placeholder-[#aba0c4] shadow-[0_8px_16px_rgba(122,107,156,0.05)] outline-none focus:bg-white smooth-transition text-[14px] font-medium"
+                                        />
+                                        <input
+                                            type="password"
+                                            placeholder="Password"
+                                            value={loginPass}
+                                            onChange={e => setLoginPass(e.target.value)}
+                                            onKeyDown={e => e.key === 'Enter' && handleLoginClick()}
+                                            className="w-full bg-white/60 backdrop-blur-md border border-white/80 rounded-full px-6 py-4 text-[#7a6b9c] placeholder-[#aba0c4] shadow-[0_8px_16px_rgba(122,107,156,0.05)] outline-none focus:bg-white smooth-transition text-[14px] font-medium tracking-widest"
+                                        />
+                                    </div>
+
+                                    <div className="flex justify-center mb-8">
+                                        <button
+                                            onClick={handleLoginClick}
+                                            className="w-2/3 bg-gradient-to-r from-[#bcabe0] to-[#a393cc] text-white rounded-full py-3.5 text-[15px] font-bold tracking-wide shadow-[0_10px_20px_rgba(158,139,196,0.3)] hover:shadow-[0_12px_25px_rgba(158,139,196,0.4)] active:scale-95 smooth-transition"
+                                        >
+                                            Log in
+                                        </button>
+                                    </div>
+
+                                    <div className="mt-2 mb-4 w-full flex flex-col space-y-3 items-center text-center px-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                                        <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">所谓的我，</p>
+                                        <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">就是过去一切体验的总和，</p>
+                                        <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">我是我接触过的人，</p>
+                                        <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">创造过的物，</p>
+                                        <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">感受过的情爱，</p>
+                                        <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">迷失过的痛苦等等，</p>
+                                        <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">所有的一切才成为此刻的我，</p>
+                                        <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm pl-1">少一点都不是。</p>
+                                    </div>
                                 </div>
 
-                                <div className="space-y-4 mb-8">
-                                    <input
-                                        type="text"
-                                        placeholder="Username"
-                                        value={loginUser}
-                                        onChange={e => setLoginUser(e.target.value)}
-                                        className="w-full bg-white/60 backdrop-blur-md border border-white/80 rounded-full px-6 py-4 text-[#7a6b9c] placeholder-[#aba0c4] shadow-[0_8px_16px_rgba(122,107,156,0.05)] outline-none focus:bg-white smooth-transition text-[14px] font-medium"
-                                    />
-                                    <input
-                                        type="password"
-                                        placeholder="Password"
-                                        value={loginPass}
-                                        onChange={e => setLoginPass(e.target.value)}
-                                        onKeyDown={e => e.key === 'Enter' && handleLoginClick()}
-                                        className="w-full bg-white/60 backdrop-blur-md border border-white/80 rounded-full px-6 py-4 text-[#7a6b9c] placeholder-[#aba0c4] shadow-[0_8px_16px_rgba(122,107,156,0.05)] outline-none focus:bg-white smooth-transition text-[14px] font-medium tracking-widest"
-                                    />
-                                </div>
-
-                                <div className="flex justify-center mb-10">
-                                    <button
-                                        onClick={handleLoginClick}
-                                        className="w-2/3 bg-gradient-to-r from-[#bcabe0] to-[#a393cc] text-white rounded-full py-3.5 text-[15px] font-bold tracking-wide shadow-[0_10px_20px_rgba(158,139,196,0.3)] hover:shadow-[0_12px_25px_rgba(158,139,196,0.4)] active:scale-95 smooth-transition"
-                                    >
-                                        Log in
-                                    </button>
-                                </div>
-
-                                <div className="mt-4 mb-10 w-full flex flex-col space-y-3.5 items-center text-center px-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">所谓的我，</p>
-                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">就是过去一切体验的总和，</p>
-                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">我是我接触过的人，</p>
-                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">创造过的物，</p>
-                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">感受过的情爱，</p>
-                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">迷失过的痛苦等等，</p>
-                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm">所有的一切才成为此刻的我，</p>
-                                    <p className="text-[12px] text-[#8a7baf] font-medium tracking-[0.3em] drop-shadow-sm pl-1">少一点都不是。</p>
-                                </div>
-
-                                <div className="text-center w-full pb-8 opacity-40 mt-auto">
+                                <div className="text-center w-full pb-8 opacity-40 shrink-0 mt-auto">
                                     <p className="text-[10px] text-[#7a6b9c] tracking-wider leading-relaxed font-semibold">
                                         By signing in, you agree to the<br/>
                                         <span className="border-b border-[#7a6b9c]/50 pb-[1px]">User Agreement & Privacy Policy</span>
