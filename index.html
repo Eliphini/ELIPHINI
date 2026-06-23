@@ -144,11 +144,6 @@
             top: 0;
             width: auto;
         }
-        
-        /* 完美的底部安全区兼容：去除了之前强制的 16px，现在上下边距将绝对对称，且紧贴底部 */
-        .pb-safe {
-            padding-bottom: env(safe-area-inset-bottom);
-        }
     </style>
 </head>
 <body>
@@ -2102,7 +2097,7 @@
 
                     {/* --- 修复后全新的底部导航栏 --- */}
                     {currentView === 'list' && (
-                        <div className="absolute bottom-0 w-full glass-bottom-nav z-20 pb-safe">
+                        <div className="absolute bottom-0 w-full glass-bottom-nav z-20">
                             <div className="flex justify-around items-center px-1 pt-1 pb-1">
                                 
                                 <NavButton icon={<Icons.Calendar />} label="日程" active={activeTab === 'calendar'} onClick={() => navigateTo('calendar')} />
