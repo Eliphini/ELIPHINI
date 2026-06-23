@@ -145,9 +145,9 @@
             width: auto;
         }
         
-        /* 完美的底部安全区兼容：刘海屏和非刘海屏均自动适配完美底距 */
+        /* 完美的底部安全区兼容：去除了之前强制的 16px，现在上下边距将绝对对称，且紧贴底部 */
         .pb-safe {
-            padding-bottom: max(env(safe-area-inset-bottom), 16px);
+            padding-bottom: env(safe-area-inset-bottom);
         }
     </style>
 </head>
