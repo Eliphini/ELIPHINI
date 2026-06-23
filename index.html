@@ -23,7 +23,8 @@
     
     <style>
         html, body {
-            height: 100%; /* 修复移动端 100vh 塌陷问题 */
+            height: 100%;
+            height: 100dvh; /* 修复移动端底部高度塌陷和黑边问题 */
             width: 100%;
             margin: 0;
             padding: 0;
@@ -43,7 +44,7 @@
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         .app-bg {
-            background: linear-gradient(165deg, #4b5d8a 0%, #9e7ca2 35%, #2c3359 65%, #060d20 100%);
+            background: linear-gradient(165deg, #4b5d8a 0%, #9e7ca2 35%, #2c3359 65%, #10172c 100%);
             background-attachment: fixed;
         }
         
@@ -310,9 +311,9 @@
         );
 
         const NavButton = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center py-1.5 w-1/5 interactive ${active ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'text-white/40 hover:text-white/80'}`}>
+            <button onClick={onClick} className={`flex flex-col items-center pt-1.5 pb-0.5 w-1/5 interactive ${active ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'text-white/40 hover:text-white/80'}`}>
                 {icon}
-                <span className={`text-[9px] mt-1 font-medium tracking-wider ${active ? 'opacity-100' : 'opacity-0'}`}>{label}</span>
+                <span className={`text-[10px] mt-1 font-medium tracking-wider ${active ? 'opacity-100' : 'opacity-0'}`}>{label}</span>
             </button>
         );
 
@@ -2020,18 +2021,20 @@
                     </div>
 
                     {currentView === 'list' && (
-                        <div className="absolute bottom-0 w-full glass-bottom-nav px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] flex justify-around items-end z-20">
-                            <NavButton icon={<Icons.Calendar />} label="日程" active={activeTab === 'calendar'} onClick={() => navigateTo('calendar')} />
-                            <NavButton icon={<Icons.Vault />} label="密码库" active={activeTab === 'vault'} onClick={() => navigateTo('vault')} />
-                            
-                            <div className="relative -top-3 w-1/5 flex justify-center">
-                                <button onClick={() => setShowAddMenu(true)} className="w-[46px] h-[46px] rounded-full flex items-center justify-center text-white border border-white/40 bg-white/10 backdrop-blur-md interactive shadow-[0_4px_16px_rgba(0,0,0,0.15)]">
-                                    <Icons.Plus />
-                                </button>
-                            </div>
+                        <div className="absolute bottom-0 w-full glass-bottom-nav z-20" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}>
+                            <div className="flex justify-around items-end pt-1 pb-1 relative">
+                                <NavButton icon={<Icons.Calendar />} label="日程" active={activeTab === 'calendar'} onClick={() => navigateTo('calendar')} />
+                                <NavButton icon={<Icons.Vault />} label="密码库" active={activeTab === 'vault'} onClick={() => navigateTo('vault')} />
+                                
+                                <div className="w-1/5 flex justify-center">
+                                    <button onClick={() => setShowAddMenu(true)} className="absolute bottom-3 w-[48px] h-[48px] rounded-full flex items-center justify-center text-white border border-white/40 bg-white/10 backdrop-blur-md interactive shadow-[0_4px_16px_rgba(0,0,0,0.15)]">
+                                        <Icons.Plus />
+                                    </button>
+                                </div>
 
-                            <NavButton icon={<Icons.Gift />} label="纪念日" active={activeTab === 'anniversary'} onClick={() => navigateTo('anniversary')} />
-                            <NavButton icon={<Icons.User />} label="个人" active={activeTab === 'profile'} onClick={() => navigateTo('profile')} />
+                                <NavButton icon={<Icons.Gift />} label="纪念日" active={activeTab === 'anniversary'} onClick={() => navigateTo('anniversary')} />
+                                <NavButton icon={<Icons.User />} label="个人" active={activeTab === 'profile'} onClick={() => navigateTo('profile')} />
+                            </div>
                         </div>
                     )}
                     
