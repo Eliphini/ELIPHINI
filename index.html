@@ -21,6 +21,19 @@
     <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js" crossorigin></script>
     
+    <!-- 引入移动端触摸屏拖拽原生补丁 (Polyfill) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/default.css">
+    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/scroll-behaviour.min.js"></script>
+    <script>
+        // 初始化移动端拖拽机制，长按 300 毫秒后触发拖拽，完美防止与上下滑动翻页发生冲突
+        window.MobileDragDrop.polyfill({
+            holdToDrag: 300,
+            dragImageTranslateOverride: window.MobileDragDrop.scrollBehaviourDragImageTranslateOverride
+        });
+        window.addEventListener('touchmove', function() {}, {passive: false});
+    </script>
+    
     <style>
         html, body {
             height: 100%;
@@ -102,7 +115,13 @@
         .agenda-scroll::-webkit-scrollbar { width: 4px; }
         .agenda-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
         
-        .draggable-item { cursor: grab; }
+        .draggable-item { 
+            cursor: grab; 
+            /* 必须加入以下代码：禁用系统默认长按菜单和选词，保证拖拽流畅 */
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
         .draggable-item:active { cursor: grabbing; }
         
         @keyframes fadeIn {
@@ -125,6 +144,11 @@
             top: 0;
             width: auto;
         }
+        
+        /* 完美的底部安全区兼容：刘海屏和非刘海屏均自动适配完美底距 */
+        .pb-safe {
+            padding-bottom: max(env(safe-area-inset-bottom), 16px);
+        }
     </style>
 </head>
 <body>
@@ -135,11 +159,10 @@
         </div>
     </div>
 
-    <!-- 关键修复：使用 text/babel 且严格不使用 import/export，防止 Babel Standalone 解析出错 -->
     <script type="text/babel" data-presets="react">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // --- 安全的本地存储包装器（防隐私模式/无痕模式报错崩溃） ---
+        // --- 安全的本地存储包装器 ---
         const safeStorage = {
             get: (key, defaultVal) => {
                 try {
@@ -159,7 +182,7 @@
             }
         };
 
-        // --- 安全的日期解析器（修复 iOS Safari 解析 YYYY-MM-DD 为 NaN 的问题） ---
+        // --- 安全的日期解析器 ---
         const parseDateSafe = (dateStr) => {
             if (!dateStr) return new Date();
             return new Date(dateStr.replace(/-/g, '/'));
@@ -310,14 +333,15 @@
             </div>
         );
 
+        /* 修复：NavButton 添加 justify-center 和 text-center，强制完美居中 */
         const NavButton = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center pt-1.5 pb-0.5 w-1/5 interactive ${active ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'text-white/40 hover:text-white/80'}`}>
+            <button onClick={onClick} className={`flex flex-col items-center justify-center pt-2 pb-1 w-1/5 interactive ${active ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'text-white/40 hover:text-white/80'}`}>
                 {icon}
-                <span className={`text-[10px] mt-1 font-medium tracking-wider ${active ? 'opacity-100' : 'opacity-0'}`}>{label}</span>
+                <span className={`text-[10px] mt-1 font-medium tracking-wider w-full text-center ${active ? 'opacity-100 block' : 'opacity-0 block'}`}>{label}</span>
             </button>
         );
 
-        const VaultView = ({ passwords, categories, onOpenDetail, onRenameCategory, onReorderCategories, onAddCategory, onDeleteCategory, onCreatePassword }) => {
+        const VaultView = ({ passwords, categories, onOpenDetail, onRenameCategory, onReorderCategories, onAddCategory, onDeleteCategory, onCreatePassword, onReorderPasswords }) => {
             const [activeGroup, setActiveGroup] = useState('工作');
             const [searchQuery, setSearchQuery] = useState('');
             const [activeCategory, setActiveCategory] = useState(null); 
@@ -325,6 +349,10 @@
             const [tempCatName, setTempCatName] = useState('');
             const [draggedItemIdx, setDraggedItemIdx] = useState(null);
             const [dragOverIdx, setDragOverIdx] = useState(null);
+            
+            // 为第二层密码项增加拖拽状态
+            const [draggedPwdIdx, setDraggedPwdIdx] = useState(null);
+            const [dragOverPwdIdx, setDragOverPwdIdx] = useState(null);
             
             const [isAddingCategory, setIsAddingCategory] = useState(false);
             const [newCategoryName, setNewCategoryName] = useState('');
@@ -402,18 +430,56 @@
                                 {filteredPasswords.filter(p => p.category === activeCategory).length === 0 ? (
                                     <div className="text-center text-white/40 mt-10 tracking-wider text-sm">该目录下暂无记录</div>
                                 ) : (
-                                    filteredPasswords.filter(p => p.category === activeCategory).map(item => (
-                                        <div key={item.id} onClick={() => onOpenDetail(item)} className="glass-panel p-5 flex justify-between items-center interactive hover:bg-white/5 !rounded-[24px]">
-                                            <div className="flex items-center space-x-4">
-                                                <div className="w-11 h-11 rounded-[16px] bg-gradient-to-tr from-white/10 to-white/5 flex items-center justify-center text-white text-lg font-medium shadow-inner border border-white/10">{(item.name || '?').substring(0,1).toUpperCase()}</div>
-                                                <div>
-                                                    <div className="font-medium text-white/90 text-[15px] tracking-wide">{item.name}</div>
-                                                    <div className="text-[12px] text-white/40 mt-1.5 font-mono tracking-wide">{item.account || item.email || '未填账号'}</div>
+                                    filteredPasswords.filter(p => p.category === activeCategory).map((item, index) => {
+                                        const isDraggingThis = draggedPwdIdx === index;
+                                        const isDragOverThis = dragOverPwdIdx === index;
+                                        
+                                        return (
+                                            <div 
+                                                key={item.id} 
+                                                draggable="true"
+                                                onDragStart={(e) => { 
+                                                    e.dataTransfer.setData('text/plain', index);
+                                                    e.dataTransfer.effectAllowed = "move";
+                                                    setDraggedPwdIdx(index); 
+                                                }}
+                                                onDragOver={(e) => {
+                                                    e.preventDefault();
+                                                    e.dataTransfer.dropEffect = "move";
+                                                    if (dragOverPwdIdx !== index) setDragOverPwdIdx(index);
+                                                }}
+                                                onDragLeave={() => setDragOverPwdIdx(null)}
+                                                onDrop={(e) => {
+                                                    e.preventDefault();
+                                                    if (draggedPwdIdx !== null && draggedPwdIdx !== index) {
+                                                        onReorderPasswords(activeGroup, activeCategory, draggedPwdIdx, index);
+                                                    }
+                                                    setDraggedPwdIdx(null);
+                                                    setDragOverPwdIdx(null);
+                                                }}
+                                                onDragEnd={() => {
+                                                    setDraggedPwdIdx(null);
+                                                    setDragOverPwdIdx(null);
+                                                }}
+                                                onClick={() => onOpenDetail(item)} 
+                                                className={`glass-panel p-5 flex justify-between items-center interactive draggable-item !rounded-[24px] 
+                                                    ${isDraggingThis ? 'opacity-40 scale-95 shadow-none' : 'hover:bg-white/5'}
+                                                    ${isDragOverThis && !isDraggingThis ? 'border-dashed border-[#E6C8E6] bg-white/10' : ''}`}
+                                            >
+                                                <div className="flex items-center space-x-4">
+                                                    <div className="w-11 h-11 rounded-[16px] bg-gradient-to-tr from-white/10 to-white/5 flex items-center justify-center text-white text-lg font-medium shadow-inner border border-white/10">{(item.name || '?').substring(0,1).toUpperCase()}</div>
+                                                    <div>
+                                                        <div className="font-medium text-white/90 text-[15px] tracking-wide">{item.name}</div>
+                                                        <div className="text-[12px] text-white/40 mt-1.5 font-mono tracking-wide">{item.account || item.email || '未填账号'}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center space-x-1 text-white/20">
+                                                    <Icons.Grip />
+                                                    <Icons.ChevronRight />
                                                 </div>
                                             </div>
-                                            <div className="text-white/20"><Icons.ChevronRight /></div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                                 
                                 <div 
@@ -1789,6 +1855,26 @@
                 });
             };
 
+            const handleReorderPasswords = (group, category, fromIndex, toIndex) => {
+                setPasswords(prev => {
+                    const categoryItems = prev.filter(p => p.group === group && p.category === category);
+                    if (!categoryItems[fromIndex] || !categoryItems[toIndex]) return prev;
+                    
+                    const movedItem = categoryItems[fromIndex];
+                    const targetItem = categoryItems[toIndex];
+                    
+                    const newList = [...prev];
+                    const globalFromIdx = newList.findIndex(p => p.id === movedItem.id);
+                    newList.splice(globalFromIdx, 1);
+                    
+                    const globalToIdx = newList.findIndex(p => p.id === targetItem.id);
+                    const insertIdx = fromIndex < toIndex ? globalToIdx + 1 : globalToIdx;
+                    
+                    newList.splice(insertIdx, 0, movedItem);
+                    return newList;
+                });
+            };
+
             const handleDeleteCategory = (group, catName) => {
                 const itemsCount = passwords.filter(p => p.group === group && p.category === catName).length;
                 const confirmMsg = itemsCount > 0 
@@ -1971,7 +2057,7 @@
                     <AtmosphereBackground />
                     
                     <div className="flex-1 flex flex-col overflow-hidden relative z-10">
-                        {activeTab === 'vault' && currentView === 'list' && <VaultView passwords={passwords} categories={categories} onOpenDetail={(item) => navigateTo('vault', 'detail', item)} onRenameCategory={handleRenameCategory} onReorderCategories={handleReorderCategories} onAddCategory={handleAddCategoryToGroup} onDeleteCategory={handleDeleteCategory} onCreatePassword={handleCreatePasswordInCategory} />}
+                        {activeTab === 'vault' && currentView === 'list' && <VaultView passwords={passwords} categories={categories} onOpenDetail={(item) => navigateTo('vault', 'detail', item)} onRenameCategory={handleRenameCategory} onReorderCategories={handleReorderCategories} onReorderPasswords={handleReorderPasswords} onAddCategory={handleAddCategoryToGroup} onDeleteCategory={handleDeleteCategory} onCreatePassword={handleCreatePasswordInCategory} />}
                         {currentView === 'add' && <PasswordForm categories={categories} initialData={editingItem} onSave={handleSavePassword} onCancel={() => navigateTo('vault')} showToast={showToast} />}
                         {currentView === 'edit' && <PasswordForm initialData={editingItem} categories={categories} onSave={handleSavePassword} onCancel={() => navigateTo('vault', 'detail', editingItem)} onDelete={() => handleDeletePassword(editingItem.id)} showToast={showToast} />}
                         {currentView === 'detail' && <PasswordDetail item={editingItem} onEdit={() => navigateTo('vault', 'edit', editingItem)} onBack={() => navigateTo('vault')} onCopy={copyToClipboard} />}
@@ -2020,17 +2106,23 @@
                         </div>
                     </div>
 
+                    {/* --- 修复后全新的底部导航栏 --- */}
                     {currentView === 'list' && (
-                        <div className="absolute bottom-0 w-full glass-bottom-nav z-20" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}>
-                            <div className="flex justify-around items-end pt-1 pb-1 relative">
-                                <NavButton icon={<Icons.Calendar />} label="日程" active={activeTab === 'calendar'} onClick={() => navigateTo('calendar')} />
-                                <NavButton icon={<Icons.Vault />} label="密码库" active={activeTab === 'vault'} onClick={() => navigateTo('vault')} />
+                        <div className="absolute bottom-0 w-full glass-bottom-nav z-20 pb-safe">
+                            <div className="flex justify-around items-center pt-1 pb-1 relative">
                                 
-                                <div className="w-1/5 flex justify-center">
-                                    <button onClick={() => setShowAddMenu(true)} className="absolute bottom-3 w-[48px] h-[48px] rounded-full flex items-center justify-center text-white border border-white/40 bg-white/10 backdrop-blur-md interactive shadow-[0_4px_16px_rgba(0,0,0,0.15)]">
+                                {/* 悬浮加号按钮 - 绝对定位，彻底不占用 Flex 宽度与高度 */}
+                                <div className="absolute left-1/2 transform -translate-x-1/2 -top-5 z-30">
+                                    <button onClick={() => setShowAddMenu(true)} className="w-[52px] h-[52px] rounded-full flex items-center justify-center text-white border border-white/40 bg-white/10 backdrop-blur-xl interactive shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
                                         <Icons.Plus />
                                     </button>
                                 </div>
+
+                                <NavButton icon={<Icons.Calendar />} label="日程" active={activeTab === 'calendar'} onClick={() => navigateTo('calendar')} />
+                                <NavButton icon={<Icons.Vault />} label="密码库" active={activeTab === 'vault'} onClick={() => navigateTo('vault')} />
+                                
+                                {/* 占位符，仅为了平衡左右两侧的 Flex 空间 */}
+                                <div className="w-1/5"></div>
 
                                 <NavButton icon={<Icons.Gift />} label="纪念日" active={activeTab === 'anniversary'} onClick={() => navigateTo('anniversary')} />
                                 <NavButton icon={<Icons.User />} label="个人" active={activeTab === 'profile'} onClick={() => navigateTo('profile')} />
