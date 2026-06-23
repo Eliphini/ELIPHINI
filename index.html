@@ -333,9 +333,9 @@
             </div>
         );
 
-        /* 修复：NavButton 添加 justify-center 和 text-center，强制完美居中 */
+        /* 修复：NavButton 统一高度，强制图标和文字严格纵向居中对齐 */
         const NavButton = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center justify-center pt-2 pb-1 w-1/5 interactive ${active ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'text-white/40 hover:text-white/80'}`}>
+            <button onClick={onClick} className={`flex flex-col items-center justify-center w-1/5 h-[54px] interactive ${active ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'text-white/40 hover:text-white/80'}`}>
                 {icon}
                 <span className={`text-[10px] mt-1 font-medium tracking-wider w-full text-center ${active ? 'opacity-100 block' : 'opacity-0 block'}`}>{label}</span>
             </button>
@@ -2109,20 +2109,17 @@
                     {/* --- 修复后全新的底部导航栏 --- */}
                     {currentView === 'list' && (
                         <div className="absolute bottom-0 w-full glass-bottom-nav z-20 pb-safe">
-                            <div className="flex justify-around items-center pt-1 pb-1 relative">
+                            <div className="flex justify-around items-center px-1 pt-1 pb-1">
                                 
-                                {/* 悬浮加号按钮 - 绝对定位，彻底不占用 Flex 宽度与高度 */}
-                                <div className="absolute left-1/2 transform -translate-x-1/2 -top-5 z-30">
-                                    <button onClick={() => setShowAddMenu(true)} className="w-[52px] h-[52px] rounded-full flex items-center justify-center text-white border border-white/40 bg-white/10 backdrop-blur-xl interactive shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
-                                        <Icons.Plus />
-                                    </button>
-                                </div>
-
                                 <NavButton icon={<Icons.Calendar />} label="日程" active={activeTab === 'calendar'} onClick={() => navigateTo('calendar')} />
                                 <NavButton icon={<Icons.Vault />} label="密码库" active={activeTab === 'vault'} onClick={() => navigateTo('vault')} />
                                 
-                                {/* 占位符，仅为了平衡左右两侧的 Flex 空间 */}
-                                <div className="w-1/5"></div>
+                                {/* 居中加号按钮 - 取消悬浮，放回 Flex 流中，高度与两侧对齐，完美不出框 */}
+                                <div className="w-1/5 flex justify-center items-center">
+                                    <button onClick={() => setShowAddMenu(true)} className="w-[44px] h-[44px] rounded-full flex items-center justify-center text-white border border-white/40 bg-white/10 backdrop-blur-xl interactive shadow-[0_4px_16px_rgba(0,0,0,0.15)]">
+                                        <Icons.Plus />
+                                    </button>
+                                </div>
 
                                 <NavButton icon={<Icons.Gift />} label="纪念日" active={activeTab === 'anniversary'} onClick={() => navigateTo('anniversary')} />
                                 <NavButton icon={<Icons.User />} label="个人" active={activeTab === 'profile'} onClick={() => navigateTo('profile')} />
